@@ -57,7 +57,8 @@ function runInit(input: RunInitInput): RunInitResult {
     addedAssets,
     keptAssets,
     reviewAssets,
-    nextRecommendation: "Repository initialized. Start /sdd to begin the guided planning flow.",
+    nextRecommendation:
+      "Repository initialized. Switch to Spec Driven, describe the task, and let it create a fresh branch workspace for this interaction.",
     needsInitialization: state.needsInitialization,
   };
 }

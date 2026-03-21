@@ -37,6 +37,12 @@ const REQUIRED_SPECIFY_ASSETS = [
 ] as const;
 
 const REQUIRED_GUIDE_ASSETS = ["AGENTS.md"] as const;
+const REQUIRED_SKILLS = [
+  ".opencode/skills/sdd-flow/SKILL.md",
+  ".opencode/skills/sdd-spec/SKILL.md",
+  ".opencode/skills/sdd-plan/SKILL.md",
+  ".opencode/skills/sdd-tasks/SKILL.md",
+] as const;
 
 describe("packaging verification", () => {
   describe("bundle contains all required scaffold assets", () => {
@@ -60,6 +66,13 @@ describe("packaging verification", () => {
         expect(existsSync(guidePath), `${guidePath} must exist in bundle`).toBe(true);
       });
     }
+
+    for (const skill of REQUIRED_SKILLS) {
+      it(`contains repo-local skill: ${skill}`, () => {
+        const skillPath = path.join(bundleRoot, skill);
+        expect(existsSync(skillPath), `${skillPath} must exist in bundle`).toBe(true);
+      });
+    }
   });
 
   describe("bundle command files have valid frontmatter", () => {
@@ -81,6 +94,12 @@ describe("packaging verification", () => {
       const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
       expect(pkg.files).toContain("managed-assets/**/*");
     });
+
+    it("does not install a global skill on postinstall", () => {
+      const pkgPath = path.join(packageRoot, "package.json");
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+      expect(pkg.scripts.postinstall).toBeUndefined();
+    });
   });
 
   describe("bundle has no extra nested managed-assets directories", () => {
@@ -95,6 +114,13 @@ describe("packaging verification", () => {
       const cmdDir = path.join(bundleRoot, ".opencode", "command");
       const files = readdirSync(cmdDir).filter((f) => f.endsWith(".md"));
       expect(files.length).toBe(12);
+    });
+  });
+
+  describe("bundle no longer ships the legacy artifact guard skill", () => {
+    it("does not include sdd-artifact-guard", () => {
+      const skillPath = path.join(bundleRoot, ".opencode", "skills", "sdd-artifact-guard", "SKILL.md");
+      expect(existsSync(skillPath)).toBe(false);
     });
   });
 });

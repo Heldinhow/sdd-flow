@@ -1,8 +1,8 @@
 ---
-description: Unified SDD workflow entrypoint — guides users through specification, clarification, planning, and automatic task preparation from a single OpenCode command. Handles repository initialization, new feature planning, and resume-from-state scenarios. Each planning stage requires explicit user approval before the next stage is unlocked.
+description: Unified SDD workflow entrypoint — guides users through specification, clarification, planning, and automatic task preparation from a single OpenCode command. Handles repository initialization and new feature planning with mandatory branch-per-interaction workspaces. Each planning stage requires explicit user approval before the next stage is unlocked.
 handoffs:
   - label: Run Task Generation
-    agent: specket.tasks
+    agent: speckit.tasks
     prompt: Generate task breakdown for the current feature workspace. Context: feature planning is complete and tasks.md needs to be produced. Only invoke this after confirming that spec.md, plan.md, research.md, data-model.md, and quickstart.md are all present and complete and the user has explicitly approved the planning package.
 ---
 
@@ -50,40 +50,34 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-This command is the single entrypoint for the guided SDD workflow. It handles three scenarios:
+This command is the single entrypoint for the guided SDD workflow. It handles two scenarios:
 
 1. **Repository initialization** — when `.opencode` or `.specify` assets are missing or need merging
-2. **New feature planning** — when a user wants to plan a new feature from scratch
-3. **Resume planning** — when a user returns to a feature workspace that already has partial artifacts
+2. **New feature planning** — when a user wants to plan a new task from scratch in a fresh typed branch workspace
 
 ### Step 1: Detect repository state
 
 Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from the repository root to determine:
 - Whether `.opencode` and `.specify` managed assets are present
-- Whether an active feature workspace exists
-- What phase the active workspace is in
+- What feature workspace currently looks active
+- What phase the discovered workspace is in
 
 Parse the JSON output to determine the next recommended action.
 
 ### Step 2: Route by detected state
 
-**IMPORTANT — Session-scoped workspace rule**: Every new Spec Driven session starts a new feature workspace by default. Do NOT reuse an existing workspace just because one is present. Resume is only for explicit user requests.
+**IMPORTANT — Branch-per-interaction rule**: Every new Spec Driven interaction starts a new typed branch workspace. Do NOT reuse an existing workspace just because one is present.
 
 **If the repository is not initialized** (managed assets missing or incomplete):
 - Route to **repository initialization flow**
 - Offer to install or merge the managed workflow assets non-destructively
-- After init completes, recommend starting the planning flow
-
-**If the user explicitly asks to resume a named feature workspace**:
-- Route to **resume flow**
-- Detect the current phase from artifact presence
-- Recommend the next logical phase
+- After init completes, recommend switching to `Spec Driven` and describing the task
 
 **In all other cases** (including when an active workspace already exists):
 - Route to **new feature planning flow**
 - Recommend a branch prefix and short name
 - Guide through specify → clarify → plan → tasks (tasks generated automatically, no manual command needed)
-- A new session means a new workspace — do not enter resume mode automatically
+- A new interaction means a new workspace — do not enter resume mode automatically
 
 ### Step 3: Repository Initialization Flow (when needed)
 
@@ -97,18 +91,25 @@ When the user invokes `/sdd init` or the system detects uninitialized repository
    - Do NOT overwrite files with newer managed versions without user consent
 3. **Execute the merge**: Copy or merge the managed assets into the repository
 4. **Report**: Show what was installed/merged and confirm the workflow is ready
-5. **Recommend next step**: Direct the user to start the planning flow with `/sdd`
+5. **Recommend next step**: Direct the user to switch to `Spec Driven`, describe the task, and approve each phase as it advances
 
 **Key rules for initialization**:
 - Always preserve user-managed customizations in `.specify/` and `.opencode/`
 - Only install missing managed files; do not replace existing ones unless the user explicitly approves
 - `AGENTS.md` is the primary development guidelines; constitution (`.specify/memory/constitution.md`) is only created explicitly via `/speckit.constitution`
 - Ensure `AGENTS.md` is created or updated with the current planning stack
+- Create `.opencode/skills/sdd-flow`, `sdd-spec`, `sdd-plan`, and `sdd-tasks` as repo-local workflow skills used by `Spec Driven`
 - Expose one clear user-facing entrypoint through the `Spec Driven` agent while keeping `/sdd` as the guided workflow backend
 
 ### Step 4: New Feature Planning Flow
 
 When the user provides a new feature request:
+
+0. **Load repo-local skills** before advancing:
+   - `.opencode/skills/sdd-flow/SKILL.md`
+   - `.opencode/skills/sdd-spec/SKILL.md`
+   - `.opencode/skills/sdd-plan/SKILL.md`
+   - `.opencode/skills/sdd-tasks/SKILL.md`
 
 1. **Suggest branch prefix and short name**:
    - Infer the best prefix from the feature intent:
@@ -121,65 +122,50 @@ When the user provides a new feature request:
    - Format: `<prefix>-<short-name>` (e.g., `feat-opencode-sdd-agent`)
    - Ask the user to confirm or adjust before proceeding
 
-2. **Run `.specify/scripts/bash/create-new-feature.sh`** with the confirmed prefix and short name to create the feature workspace
+2. **Run `.specify/scripts/bash/create-new-feature.sh`** with the confirmed prefix and short name to create the feature workspace and git branch
 
-   3. **Guided specify**: Create or update `spec.md` in the feature workspace:
-    - Extract actors, actions, data, and constraints from the feature request
-    - Generate user stories with clear acceptance scenarios
-    - Identify edge cases and success criteria
-    - When ambiguous: ask focused clarification questions sequentially, recommend answers, record accepted responses
+3. **Guided specify**: Create or update `spec.md` in the feature workspace:
+   - Extract actors, actions, data, and constraints from the feature request
+   - Generate user stories with clear acceptance scenarios
+   - Identify edge cases and success criteria
+   - When ambiguous: ask focused clarification questions sequentially, recommend answers, record accepted responses
 
-   4. **Guided spec approval**: After spec is generated, stop and ask the user to review and approve `spec.md`:
-    - The workflow waits for explicit user approval before generating any planning artifacts
-    - If the user requests changes, update `spec.md` and wait for re-approval
-    - Only after approval, proceed to the planning stage
+4. **Guided spec approval**: After spec is generated, stop and ask the user to review and approve `spec.md`:
+   - The workflow waits for explicit user approval before generating any planning artifacts
+   - If the user requests changes, update `spec.md` and wait for re-approval
+   - Only after approval, proceed to the planning stage
 
-   5. **Guided plan**: After spec is approved:
-    - Run `.specify/scripts/bash/setup-plan.sh --json` to prepare the planning package
-    - Generate `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and any relevant markdown contracts inside the feature workspace
-    - Fill Technical Context, Constitution Check, Project Structure, and Complexity Tracking
+5. **Guided plan**: After spec is approved:
+   - Run `.specify/scripts/bash/setup-plan.sh --json` to prepare the planning package
+   - Generate `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and any relevant markdown contracts inside the feature workspace
+   - Fill Technical Context, Constitution Check, Project Structure, and Complexity Tracking
 
-   6. **Guided plan approval**: After planning package is generated, stop and ask the user to review and approve the plan:
-    - The workflow waits for explicit user approval before generating `tasks.md`
-    - If the user requests changes, update the planning artifacts and wait for re-approval
-    - Only after approval, proceed to task generation
+6. **Guided plan approval**: After planning package is generated, stop and ask the user to review and approve the plan:
+   - The workflow waits for explicit user approval before generating `tasks.md`
+   - If the user requests changes, update the planning artifacts and wait for re-approval
+   - Only after approval, proceed to task generation
 
-   7. **Guided task preparation**: After plan is approved:
-    - Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` to verify readiness
-    - Generate `tasks.md` using the approved planning artifacts as input
-    - Do NOT ask the user to run a separate task-generation command
+7. **Guided task preparation**: After plan is approved:
+   - Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` to verify readiness
+   - Generate `tasks.md` using the approved planning artifacts as input
+   - Do NOT ask the user to run a separate task-generation command
 
-   8. **Present next step**: Always end with a clear, specific recommendation for what to do next
-
-### Step 5: Resume Flow
-
-When the user returns to a feature workspace that already has partial artifacts:
-
-1. **Detect active workspace**: Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` to find the current feature workspace
-2. **Evaluate artifact state**: Check which artifacts exist and are current:
-   - `spec.md` exists but approval state is unknown → recommend reviewing and approving spec
-   - `spec.md` approved but `plan.md` missing → generate planning package
-   - Planning package exists but approval state is unknown → recommend reviewing and approving plan
-   - Planning package approved but `tasks.md` missing → generate tasks
-   - Partial artifacts → recommend resuming from the missing/outdated one
-3. **Resume from correct phase**: Do not recreate existing valid artifacts; respect approval gates
-4. **Report state**: Clearly show what exists, what is missing, what is waiting for approval, and what will be produced next
-5. **Present next step**: Recommend the specific next action, including any pending approval
+8. **Present next step**: Always end with a clear, specific recommendation for what to do next
 
 ### Key Behavioral Rules
 
 - **Slash commands execute first**: When user input starts with `/`, treat it as a registered command invocation before any other interpretation. Do not re-read the command file or explain the command.
 - **User-facing entrypoint**: `Spec Driven` is the primary OpenCode agent for this workflow; `/sdd` is the repo-local backend it relies on.
+- **Repo-local skill contract**: `Spec Driven` must use `sdd-flow`, `sdd-spec`, `sdd-plan`, and `sdd-tasks` from `.opencode/skills/`.
 - **Plan mode only**: This command produces planning artifacts (markdown files). It does not generate source code.
 - **Markdown-only outputs**: All artifacts created by this workflow are markdown files in the feature workspace.
 - **Managed init backend**: If non-markdown workflow assets must be installed, do that through the managed repository-init backend rather than by agent-authored code generation.
 - **Sequential clarification**: Ask one question at a time. Recommend the best answer. Record accepted answers in the relevant artifact.
 - **Sequential approval gates**: The workflow generates one stage at a time and waits for explicit user approval before advancing. Approval gates are: spec approval before planning, and plan approval before tasks.
+- **Branch-per-interaction**: Treat every new task as a fresh branch/workspace request. Do not auto-resume prior workspaces as part of the normal guided flow.
 - **No destructive operations**: Never overwrite existing user-managed files without explicit user consent.
 - **Traceability**: Every artifact update must preserve the link back to the original feature request and any clarification answers.
 - **Non-interactive detection**: When `sdd` is invoked with explicit arguments, use those directly without prompting for missing information.
-- **Automatic task generation**: After `spec.md`, `plan.md`, `research.md`, `data-model.md`, and `quickstart.md` are complete, the workflow automatically generates `tasks.md` without requiring the user to run a separate command.
-- **Conservative resume**: When resuming without known approval state, the workflow asks for revalidation rather than auto-advancing.
 
 ### After SDD workflow completes
 

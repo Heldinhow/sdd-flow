@@ -99,6 +99,7 @@ Put another way:
 |---------|------|
 | **`Spec Driven`** | The visible OpenCode planning agent. It stays in plan mode and writes markdown artifacts only. |
 | **`/sdd-init`** | One-time repository bootstrap. Installs or merges the managed SDD scaffold. Runs in the build agent. |
+| **Repo-local skills** | `sdd-flow`, `sdd-spec`, `sdd-plan`, and `sdd-tasks` are installed into `.opencode/skills/` and keep `Spec Driven` aligned with the workflow. |
 | **Internal SDD backend** | Repo-local workflow contract used automatically by `Spec Driven` to orchestrate the SDD phases. |
 | **`/implement`** | Build-mode execution command. Loads planning artifacts and executes `tasks.md`. |
 | **Managed assets** | The repository scaffold installed by init: `.opencode/`, `.specify/`, `specs/`, and `AGENTS.md`. |
@@ -180,6 +181,7 @@ Bootstrap needs write access because it creates and merges the repository scaffo
 - `.opencode/`
   - command definitions
   - plugin runtime files
+  - repo-local skills for `Spec Driven`
   - local OpenCode integration points
 - `specs/`
   - feature workspace root
@@ -191,8 +193,20 @@ Bootstrap needs write access because it creates and merges the repository scaffo
 1. It creates the directory structure needed for SDD.
 2. It installs the workflow templates and shell backends.
 3. It installs the OpenCode command surface and plugin assets.
-4. It helps create the repository constitution.
-5. It verifies that the scaffold is usable.
+4. It installs the repo-local SDD skills used by `Spec Driven`.
+5. It helps create the repository constitution.
+6. It verifies that the scaffold is usable.
+
+### Skills installed by `/sdd-init`
+
+`/sdd-init` creates these skills inside the repository:
+
+- `sdd-flow` for orchestration, branch creation, approval gates, and phase transitions
+- `sdd-spec` for `spec.md` authoring and clarification
+- `sdd-plan` for `plan.md`, `research.md`, `data-model.md`, and `quickstart.md`
+- `sdd-tasks` for validating the planning package and generating `tasks.md`
+
+The goal is to keep the planning behavior owned by the repository instead of buried in hidden agent state.
 
 ### Non-destructive behavior
 
@@ -227,6 +241,7 @@ The `Spec Driven` agent uses the internal repo-local SDD backend automatically a
 
 ### What the agent does
 
+- loads the repo-local SDD skills
 - creates the feature workspace
 - routes the workflow to the correct phase
 - writes the planning artifacts
@@ -235,10 +250,12 @@ The `Spec Driven` agent uses the internal repo-local SDD backend automatically a
 
 ### Key behavior
 
-Every phase transition is approval-gated.
+Every new interaction is branch-first and every phase transition is approval-gated.
 
 That means:
 
+- the agent recommends a typed branch like `feat-auth-flow` or `fix-session-timeout`
+- a fresh branch workspace is created for that interaction
 - `spec.md` is produced first
 - the workflow waits for approval
 - clarification happens only if needed
@@ -425,9 +442,9 @@ The user must approve the output before the next stage begins.
 
 ### 3. Session-scoped workspaces
 
-Each new `Spec Driven` session starts a fresh feature workspace by default.
+Each new `Spec Driven` interaction starts a fresh typed branch workspace by default.
 
-Existing workspaces are resumed only when the user explicitly asks to continue one.
+That applies to `feat`, `fix`, `refactor`, `init`, and `test` requests.
 
 ### 4. Repo-owned artifacts
 
@@ -487,6 +504,13 @@ But the recommended workflow is:
 - `.opencode/src/workflow/orchestrate-planning.ts`
 - `.opencode/src/workflow/run-guided-sdd.ts`
 - `.opencode/src/workflow/context-loader.ts`
+
+### Repo-local skills
+
+- `.opencode/skills/sdd-flow/SKILL.md`
+- `.opencode/skills/sdd-spec/SKILL.md`
+- `.opencode/skills/sdd-plan/SKILL.md`
+- `.opencode/skills/sdd-tasks/SKILL.md`
 
 ### Repository initialization
 
@@ -553,6 +577,7 @@ sdd-flow/
 │   ├── managed-assets/       # Bundle published to npm
 │   ├── plugin/               # Package export entry
 │   ├── plugins/              # Local OpenCode loader
+│   ├── skills/               # Repo-local skills installed by /sdd-init
 │   ├── src/
 │   │   ├── init/             # Non-destructive bootstrap runtime
 │   │   ├── plugin/           # Agent and command registration

@@ -7,6 +7,7 @@ import { BRANCH_PREFIX_VALUES } from "../branching/prefixes";
 import { discoverCommands, registerCommands } from "./command-registry";
 import { PreScriptRunner } from "./pre-script-runner";
 import {
+  SDD_SKILL_NAMES,
   SPEC_DRIVEN_AGENT,
   buildSpecDrivenPrompt,
   injectSddBackendTemplate,
@@ -44,6 +45,8 @@ function buildSystemContext(projectRoot: string): string[] {
     `Repository-local SDD workflow root: ${projectRoot}`,
     "Use Spec Driven as the user-facing SDD entrypoint.",
     "Use the internal repo-local SDD backend automatically rather than exposing it as a user-facing command.",
+    `Load these repo-local skills for Spec Driven work: ${SDD_SKILL_NAMES.join(", ")}.`,
+    "Every new Spec Driven interaction creates a fresh branch-backed workspace before planning begins.",
     `Preferred branch prefixes: ${BRANCH_PREFIX_VALUES.join(", ")}.`,
   ];
 }

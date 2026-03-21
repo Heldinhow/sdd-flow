@@ -18,11 +18,11 @@ find_project_root() {
 }
 
 get_script_repo_root() {
-    local script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local script_dir
+    script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     (cd "$script_dir/../../.." && pwd)
 }
 
-# Get repository root, preferring the nearest local .specify root over any parent git repository.
 get_repo_root() {
     if [[ -n "${SPECIFY_REPO_ROOT:-}" ]] && [[ -d "${SPECIFY_REPO_ROOT}/.specify" ]]; then
         echo "$SPECIFY_REPO_ROOT"
@@ -102,7 +102,6 @@ get_latest_feature_dir_name() {
     [[ -n "$latest_feature" ]] && echo "$latest_feature"
 }
 
-# Get current branch, preferring explicit workflow state or a matching feature workspace.
 get_current_branch() {
     if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
         echo "$SPECIFY_FEATURE"
@@ -136,7 +135,6 @@ get_current_branch() {
     echo "main"
 }
 
-# Check whether the resolved workflow root is itself a git repository root.
 has_git() {
     local git_root=""
     git_root="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
@@ -199,8 +197,10 @@ resolve_feature_dir() {
 }
 
 get_feature_paths() {
-    local repo_root=$(get_repo_root)
-    local current_branch=$(get_current_branch)
+    local repo_root
+    repo_root="$(get_repo_root)"
+    local current_branch
+    current_branch="$(get_current_branch)"
     local has_git_repo="false"
 
     if has_git; then
@@ -208,7 +208,7 @@ get_feature_paths() {
     fi
 
     local feature_dir
-    if ! feature_dir=$(resolve_feature_dir "$repo_root" "$current_branch"); then
+    if ! feature_dir="$(resolve_feature_dir "$repo_root" "$current_branch")"; then
         echo "ERROR: Failed to resolve feature directory" >&2
         return 1
     fi
@@ -226,13 +226,10 @@ get_feature_paths() {
     printf 'CONTRACTS_DIR=%q\n' "$feature_dir/contracts"
 }
 
-# Check if jq is available for safe JSON construction
 has_jq() {
     command -v jq >/dev/null 2>&1
 }
 
-# Escape a string for safe embedding in a JSON value (fallback when jq is unavailable).
-# Handles backslash, double-quote, and JSON-required control character escapes (RFC 8259).
 json_escape() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -242,10 +239,6 @@ json_escape() {
     s="${s//$'\r'/\\r}"
     s="${s//$'\b'/\\b}"
     s="${s//$'\f'/\\f}"
-    # Escape any remaining U+0001-U+001F control characters as \uXXXX.
-    # (U+0000/NUL cannot appear in bash strings and is excluded.)
-    # LC_ALL=C ensures ${#s} counts bytes and ${s:$i:1} yields single bytes,
-    # so multi-byte UTF-8 sequences (first byte >= 0xC0) pass through intact.
     local LC_ALL=C
     local i char code
     for (( i=0; i<${#s}; i++ )); do
@@ -262,85 +255,15 @@ json_escape() {
 check_file() { [[ -f "$1" ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 check_dir() { [[ -d "$1" && -n $(ls -A "$1" 2>/dev/null) ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 
-# Resolve a template name to a file path using the priority stack:
-#   1. .specify/templates/overrides/
-#   2. .specify/presets/<preset-id>/templates/ (sorted by priority from .registry)
-#   3. .specify/extensions/<ext-id>/templates/
-#   4. .specify/templates/ (core)
 resolve_template() {
     local template_name="$1"
     local repo_root="$2"
-    local base="$repo_root/.specify/templates"
+    local explicit_path="$repo_root/.specify/templates/${template_name}.md"
 
-    # Priority 1: Project overrides
-    local override="$base/overrides/${template_name}.md"
-    [ -f "$override" ] && echo "$override" && return 0
-
-    # Priority 2: Installed presets (sorted by priority from .registry)
-    local presets_dir="$repo_root/.specify/presets"
-    if [ -d "$presets_dir" ]; then
-        local registry_file="$presets_dir/.registry"
-        if [ -f "$registry_file" ] && command -v python3 >/dev/null 2>&1; then
-            # Read preset IDs sorted by priority (lower number = higher precedence).
-            # The python3 call is wrapped in an if-condition so that set -e does not
-            # abort the function when python3 exits non-zero (e.g. invalid JSON).
-            local sorted_presets=""
-            if sorted_presets=$(SPECKIT_REGISTRY="$registry_file" python3 -c "
-import json, sys, os
-try:
-    with open(os.environ['SPECKIT_REGISTRY']) as f:
-        data = json.load(f)
-    presets = data.get('presets', {})
-    for pid, meta in sorted(presets.items(), key=lambda x: x[1].get('priority', 10)):
-        print(pid)
-except Exception:
-    sys.exit(1)
-" 2>/dev/null); then
-                if [ -n "$sorted_presets" ]; then
-                    # python3 succeeded and returned preset IDs — search in priority order
-                    while IFS= read -r preset_id; do
-                        local candidate="$presets_dir/$preset_id/templates/${template_name}.md"
-                        [ -f "$candidate" ] && echo "$candidate" && return 0
-                    done <<< "$sorted_presets"
-                fi
-                # python3 succeeded but registry has no presets — nothing to search
-            else
-                # python3 failed (missing, or registry parse error) — fall back to unordered directory scan
-                for preset in "$presets_dir"/*/; do
-                    [ -d "$preset" ] || continue
-                    local candidate="$preset/templates/${template_name}.md"
-                    [ -f "$candidate" ] && echo "$candidate" && return 0
-                done
-            fi
-        else
-            # Fallback: alphabetical directory order (no python3 available)
-            for preset in "$presets_dir"/*/; do
-                [ -d "$preset" ] || continue
-                local candidate="$preset/templates/${template_name}.md"
-                [ -f "$candidate" ] && echo "$candidate" && return 0
-            done
-        fi
+    if [[ -f "$explicit_path" ]]; then
+        echo "$explicit_path"
+        return 0
     fi
 
-    # Priority 3: Extension-provided templates
-    local ext_dir="$repo_root/.specify/extensions"
-    if [ -d "$ext_dir" ]; then
-        for ext in "$ext_dir"/*/; do
-            [ -d "$ext" ] || continue
-            # Skip hidden directories (e.g. .backup, .cache)
-            case "$(basename "$ext")" in .*) continue;; esac
-            local candidate="$ext/templates/${template_name}.md"
-            [ -f "$candidate" ] && echo "$candidate" && return 0
-        done
-    fi
-
-    # Priority 4: Core templates
-    local core="$base/${template_name}.md"
-    [ -f "$core" ] && echo "$core" && return 0
-
-    # Template not found in any location.
-    # Return 1 so callers can distinguish "not found" from "found".
-    # Callers running under set -e should use: TEMPLATE=$(resolve_template ...) || true
     return 1
 }
-

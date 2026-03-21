@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const MANAGED_ASSET_GROUP = {
   COMMAND: "command",
   RUNTIME: "runtime",
+  SKILL: "skill",
   SCRIPT: "script",
   TEMPLATE: "template",
   MEMORY: "memory",
@@ -13,8 +14,10 @@ const MANAGED_ASSET_GROUP = {
 
 const MANAGED_ASSET_ROOT = {
   OPENCODE_COMMAND: ".opencode/command",
+  OPENCODE_SKILLS: ".opencode/skills",
   SPECIFY_SCRIPTS: ".specify/scripts/bash",
   SPECIFY_TEMPLATES: ".specify/templates",
+  SPECIFY_MEMORY: ".specify/memory",
   GUIDE: "AGENTS.md",
 } as const;
 
@@ -57,6 +60,9 @@ function collectRelativeFiles(sourceRoot: string, relativePath: string): string[
 function inferManagedAssetGroup(relativePath: string): ManagedAssetGroup {
   if (relativePath.startsWith(".opencode/command/")) {
     return MANAGED_ASSET_GROUP.COMMAND;
+  }
+  if (relativePath.startsWith(".opencode/skills/")) {
+    return MANAGED_ASSET_GROUP.SKILL;
   }
   if (relativePath.startsWith(".specify/scripts/")) {
     return MANAGED_ASSET_GROUP.SCRIPT;
