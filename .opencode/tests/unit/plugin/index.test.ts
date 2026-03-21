@@ -117,6 +117,78 @@ describe("sdd plugin", () => {
     expect("text" in output.parts[0] ? output.parts[0].text : "").toContain("Run /sdd with plan auth flow");
   });
 
+  it("does NOT inject the /sdd template when user input starts with a slash command", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-slash-"));
+    mkdirSync(path.join(projectRoot, ".specify"));
+    mkdirSync(path.join(projectRoot, "specs"));
+    mkdirSync(path.join(projectRoot, ".opencode", "command"), { recursive: true });
+    await Bun.write(path.join(projectRoot, ".opencode", "command", "sdd.md"), "Run /sdd with $ARGUMENTS\n");
+
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const output = {
+      message: { id: "message_1", sessionID: "session_1" },
+      parts: [
+        {
+          id: "part_1",
+          sessionID: "session_1",
+          messageID: "message_1",
+          type: "text",
+          text: "/implement",
+        },
+      ],
+    } as Parameters<NonNullable<PluginHooks["chat.message"]>>[1];
+
+    await hooks["chat.message"]?.(
+      {
+        sessionID: "session_1",
+        agent: "Spec Driven",
+      },
+      output,
+    );
+
+    expect(output.parts.length).toBe(1);
+    expect(output.parts[0]).toMatchObject({
+      type: "text",
+      text: "/implement",
+    });
+  });
+
+  it("does NOT inject the /sdd template for slash commands with arguments", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-slash-args-"));
+    mkdirSync(path.join(projectRoot, ".specify"));
+    mkdirSync(path.join(projectRoot, "specs"));
+    mkdirSync(path.join(projectRoot, ".opencode", "command"), { recursive: true });
+    await Bun.write(path.join(projectRoot, ".opencode", "command", "sdd.md"), "Run /sdd with $ARGUMENTS\n");
+
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const output = {
+      message: { id: "message_1", sessionID: "session_1" },
+      parts: [
+        {
+          id: "part_1",
+          sessionID: "session_1",
+          messageID: "message_1",
+          type: "text",
+          text: "/sdd-init my repo",
+        },
+      ],
+    } as Parameters<NonNullable<PluginHooks["chat.message"]>>[1];
+
+    await hooks["chat.message"]?.(
+      {
+        sessionID: "session_1",
+        agent: "Spec Driven",
+      },
+      output,
+    );
+
+    expect(output.parts.length).toBe(1);
+    expect(output.parts[0]).toMatchObject({
+      type: "text",
+      text: "/sdd-init my repo",
+    });
+  });
+
   it("shows warning prompt for uninitialized repo", async () => {
     const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-uninit-"));
     const hooks = await sddPlugin(createPluginInput(projectRoot));
@@ -127,7 +199,7 @@ describe("sdd plugin", () => {
     const agentConfig = config.agent?.["Spec Driven"] as { prompt?: string };
     expect(agentConfig.prompt).toContain("Repository Not Initialized");
     expect(agentConfig.prompt).toContain("/sdd-init");
-    expect(agentConfig.prompt).toContain("Switch to the default agent");
+    expect(agentConfig.prompt).toContain("Switch to the build agent");
   });
 
   it("shows normal prompt for initialized repo", async () => {

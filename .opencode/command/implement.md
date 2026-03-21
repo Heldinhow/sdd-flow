@@ -1,5 +1,5 @@
 ---
-description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to build agent for code execution.
+description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to build agent for code execution. When invoked, this command loads the active feature workspace, locates tasks.md, and begins implementation — it does NOT explain the command markdown file.
 handoffs:
   - label: Implement Tasks
     agent: build
@@ -7,6 +7,20 @@ handoffs:
       Execute the implementation plan for this feature workspace.
       Follow the implementation flow from /speckit.implement...
 ---
+
+## Execution Posture
+
+When `/implement` is invoked, the system enters **implementation mode** — not documentation or explanation mode.
+
+**Expected behavior** (correct):
+- Detect the active feature workspace
+- Load `tasks.md` and supporting planning artifacts
+- Report execution progress or state a concrete blocker
+
+**Incorrect behavior** (do NOT do):
+- Summarize `.opencode/command/implement.md`
+- Explain what the command does instead of executing it
+- Treat the command markdown as a file to read rather than a workflow to run
 
 ## User Input
 

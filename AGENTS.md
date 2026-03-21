@@ -270,6 +270,18 @@ Every new Spec Driven session creates a new feature workspace by default. Resume
 - **New session**: New workspace — even if an old workspace exists
 - **Resume**: Only when user explicitly asks to continue a named feature/branch
 
+### Slash Command Execution Rule
+
+**Critical**: When user input starts with `/`, treat it as a registered command invocation BEFORE any other interpretation. Do not re-read the command markdown file or explain what the command does. Execute it.
+
+- User types `/implement` → Execute the `/implement` workflow immediately
+- User types `/sdd-init` → Execute the `/sdd-init` workflow immediately
+- NOT: "Let me explain what `/implement` does"
+
+### Automatic Task Generation
+
+After `spec.md`, `plan.md`, `research.md`, `data-model.md`, and `quickstart.md` are complete, the SDD workflow automatically generates `tasks.md` without requiring the user to run a separate command. The user does not need to invoke `/speckit.tasks` manually.
+
 ### Phase Flow
 
 ```
