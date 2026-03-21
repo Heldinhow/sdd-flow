@@ -68,4 +68,15 @@ describe("guided sdd workflow", () => {
     expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
     expect(result.nextRecommendation).toContain("tasks");
   });
+
+  it("routes initialized repositories without an active feature to specify", () => {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-guided-"));
+    mkdirSync(path.join(repoRoot, ".specify"));
+    mkdirSync(path.join(repoRoot, "specs"));
+
+    const result = runGuidedSdd({ repoRoot });
+
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPECIFY);
+    expect(result.nextRecommendation).toContain("spec");
+  });
 });

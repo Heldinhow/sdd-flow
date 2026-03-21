@@ -101,7 +101,7 @@ When the user invokes `/sdd init` or the system detects uninitialized repository
 - Only install missing managed files; do not replace existing ones unless the user explicitly approves
 - Create `.specify/memory/constitution.md` from the template if it does not exist
 - Ensure `AGENTS.md` is created or updated with the current planning stack
-- Expose one clear primary entrypoint (`/sdd`) for the guided workflow
+- Expose one clear user-facing entrypoint through the `Spec Driven` agent while keeping `/sdd` as the guided workflow backend
 
 ### Step 4: New Feature Planning Flow
 
@@ -128,7 +128,7 @@ When the user provides a new feature request:
 
 4. **Guided plan**: After spec is approved:
    - Run `.specify/scripts/bash/setup-plan.sh --json` to prepare the planning package
-   - Generate `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and relevant contracts
+   - Generate `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, and any relevant markdown contracts inside the feature workspace
    - Fill Technical Context, Constitution Check, Project Structure, and Complexity Tracking
 
 5. **Guided task preparation**: After planning is complete:
@@ -152,8 +152,10 @@ When the user returns to a feature workspace that already has partial artifacts:
 
 ### Key Behavioral Rules
 
+- **User-facing entrypoint**: `Spec Driven` is the primary OpenCode agent for this workflow; `/sdd` is the repo-local backend it relies on.
 - **Plan mode only**: This command produces planning artifacts (markdown files). It does not generate source code.
 - **Markdown-only outputs**: All artifacts created by this workflow are markdown files in the feature workspace.
+- **Managed init backend**: If non-markdown workflow assets must be installed, do that through the managed repository-init backend rather than by agent-authored code generation.
 - **Sequential clarification**: Ask one question at a time. Recommend the best answer. Record accepted answers in the relevant artifact.
 - **No destructive operations**: Never overwrite existing user-managed files without explicit user consent.
 - **Traceability**: Every artifact update must preserve the link back to the original feature request and any clarification answers.

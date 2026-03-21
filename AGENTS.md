@@ -20,6 +20,7 @@ specs/
 
 - `cd .opencode && bun test`
 - `cd .opencode && bunx tsc --noEmit`
+- `Spec Driven` is the primary user-facing SDD agent in OpenCode
 - `/sdd` for the unified guided workflow
 
 ## Code Style
@@ -27,6 +28,7 @@ specs/
 - TypeScript: ESM modules, schema-validated boundaries, repository-first workflow orchestration
 - Git branches: use `feat-short-name`, `fix-short-name`, `refactor-short-name`, `init-short-name`, or `test-short-name`
 - Markdown artifacts: planning outputs stay traceable, human-readable, and safe for non-destructive updates
+- `Spec Driven`: plan mode only, markdown planning artifacts only, no direct source-code generation
 
 ## Recent Changes
 

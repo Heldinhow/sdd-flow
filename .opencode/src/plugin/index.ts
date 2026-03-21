@@ -4,6 +4,12 @@ import path from "node:path";
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 
 import { BRANCH_PREFIX_VALUES } from "../branching/prefixes";
+import {
+  SPEC_DRIVEN_AGENT,
+  buildSpecDrivenPrompt,
+  injectSddBackendTemplate,
+  registerSpecDrivenAgent,
+} from "./spec-driven-agent";
 
 function hasSddMarkers(directory: string): boolean {
   return existsSync(path.join(directory, ".specify")) && existsSync(path.join(directory, "specs"));
@@ -34,22 +40,40 @@ function resolveProjectRoot(input: Pick<PluginInput, "directory" | "worktree">):
 function buildSystemContext(projectRoot: string): string[] {
   return [
     `Repository-local SDD workflow root: ${projectRoot}`,
-    "Use /sdd as the primary workflow entrypoint.",
+    "Use Spec Driven as the user-facing SDD entrypoint.",
+    "Use /sdd as the primary workflow backend.",
     `Preferred branch prefixes: ${BRANCH_PREFIX_VALUES.join(", ")}.`,
   ];
 }
 
 const sddPlugin: Plugin = async (input) => {
   const projectRoot = resolveProjectRoot(input);
+  const repoInitialized = hasSddMarkers(projectRoot);
 
   return {
+    async config(config) {
+      registerSpecDrivenAgent(
+        config,
+        buildSpecDrivenPrompt({
+          projectRoot,
+          repoInitialized,
+        }),
+      );
+    },
     async "shell.env"(_event, output) {
       output.env.SPECIFY_REPO_ROOT = projectRoot;
       output.env.SDD_PRIMARY_COMMAND = "sdd";
       output.env.SDD_BRANCH_PREFIXES = BRANCH_PREFIX_VALUES.join(",");
     },
+    async "chat.message"(event, output) {
+      if (!repoInitialized || event.agent !== SPEC_DRIVEN_AGENT) {
+        return;
+      }
+
+      injectSddBackendTemplate(projectRoot, output);
+    },
     async "experimental.chat.system.transform"(_event, output) {
-      if (!hasSddMarkers(projectRoot)) {
+      if (!repoInitialized) {
         return;
       }
 

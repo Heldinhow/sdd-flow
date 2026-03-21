@@ -71,4 +71,15 @@ describe("clarify and resume workflows", () => {
     expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
     expect(result.nextRecommendation).toContain("tasks");
   });
+
+  it("routes initialized repositories without an active feature to specify", () => {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-resume-"));
+    mkdirSync(path.join(repoRoot, ".specify"));
+    mkdirSync(path.join(repoRoot, "specs"));
+
+    const result = resumeFlow({ repoRoot });
+
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPECIFY);
+    expect(result.nextRecommendation).toContain("spec");
+  });
 });

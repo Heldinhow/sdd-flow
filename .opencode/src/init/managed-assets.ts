@@ -13,6 +13,7 @@ const MANAGED_ASSET_GROUP = {
 const MANAGED_ASSET_ROOT = {
   OPENCODE_COMMAND: ".opencode/command",
   OPENCODE_PLUGIN: ".opencode/plugin",
+  OPENCODE_PLUGINS: ".opencode/plugins",
   OPENCODE_SOURCE: ".opencode/src",
   OPENCODE_PACKAGE: ".opencode/package.json",
   OPENCODE_LOCKFILE: ".opencode/bun.lock",

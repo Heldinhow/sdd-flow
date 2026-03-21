@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { detectActiveWorkspace } from "./detect-active-workspace";
@@ -17,11 +18,15 @@ interface ResumeFlowResult {
   nextRecommendation: string;
 }
 
+function hasInitializedRepo(repoRoot: string): boolean {
+  return existsSync(path.join(repoRoot, ".specify")) && existsSync(path.join(repoRoot, "specs"));
+}
+
 function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
   const activeFeature = input.activeFeature ?? detectActiveWorkspace(input.repoRoot);
   if (!activeFeature) {
     const evaluation = evaluateArtifactState({
-      repoInitialized: false,
+      repoInitialized: hasInitializedRepo(input.repoRoot),
       specExists: false,
       planExists: false,
       tasksExists: false,
