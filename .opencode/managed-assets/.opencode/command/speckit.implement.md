@@ -1,5 +1,13 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+handoffs:
+  - label: Implement Tasks
+    agent: build
+    prompt: |
+      Execute the implementation plan for this feature workspace.
+      Follow the implementation flow from /speckit.implement...
+scripts:
+  sh: .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
 ---
 
 ## User Input

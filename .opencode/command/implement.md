@@ -6,6 +6,8 @@ handoffs:
     prompt: |
       Execute the implementation plan for this feature workspace.
       Follow the implementation flow from /speckit.implement...
+scripts:
+  sh: .specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks
 ---
 
 ## Execution Posture
@@ -13,16 +15,11 @@ handoffs:
 When `/implement` is invoked, the system enters **implementation mode** — not documentation or explanation mode.
 
 **Expected behavior** (correct):
-- Detect the active feature workspace
+- Detect the active feature workspace by running the prerequisite check script
 - Load `tasks.md` and supporting planning artifacts
 - Report execution progress or state a concrete blocker
 
 **Incorrect behavior** (do NOT do):
-- Summarize `.opencode/command/implement.md`
-- Explain what the command does instead of executing it
-- Treat the command markdown as a file to read rather than a workflow to run
-
-## User Input
 
 ```text
 $ARGUMENTS

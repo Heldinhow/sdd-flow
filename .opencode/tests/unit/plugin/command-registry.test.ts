@@ -65,6 +65,35 @@ handoffs:
       expect(result!.handoffs).toBeDefined();
       expect(result!.handoffs![0].agent).toBe("build");
     });
+
+    it("parses scripts.sh from frontmatter", () => {
+      const content = `---
+description: Execute implementation
+scripts:
+  sh: .specify/scripts/bash/check-prerequisites.sh --json --require-tasks
+---
+
+# Content`;
+
+      const result = parseYamlFrontmatter(content);
+
+      expect(result).not.toBeNull();
+      expect(result!.scripts).toBeDefined();
+      expect(result!.scripts!.sh).toBe(".specify/scripts/bash/check-prerequisites.sh --json --require-tasks");
+    });
+
+    it("returns undefined scripts when not present", () => {
+      const content = `---
+description: Simple command
+---
+
+# Content`;
+
+      const result = parseYamlFrontmatter(content);
+
+      expect(result).not.toBeNull();
+      expect(result!.scripts).toBeUndefined();
+    });
   });
 
   describe("discoverCommands", () => {
@@ -146,6 +175,16 @@ handoffs:
       const entry = commands.get("implement");
       expect(entry).toBeDefined();
       expect(entry!.agent).toBe("build");
+    });
+
+    it("resolves implement command has scripts metadata", () => {
+      const commands = discoverCommands(process.cwd());
+
+      const entry = commands.get("implement");
+      expect(entry).toBeDefined();
+      expect(entry!.scripts).toBeDefined();
+      expect(entry!.scripts!.sh).toContain("check-prerequisites.sh");
+      expect(entry!.scripts!.sh).toContain("--require-tasks");
     });
 
     it("sets template path correctly", () => {
