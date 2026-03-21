@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 
 import type { Config } from "@opencode-ai/sdk";
 
+interface CommandScripts {
+  sh?: string;
+}
+
 interface CommandFrontmatter {
   description?: string;
   handoffs?: Array<{
@@ -11,12 +15,14 @@ interface CommandFrontmatter {
     agent: string;
     prompt?: string;
   }>;
+  scripts?: CommandScripts;
 }
 
 interface CommandEntry {
   template: string;
   description?: string;
   agent?: string;
+  scripts?: CommandScripts;
 }
 
 const COMMANDS_DIR = [".opencode", "command"] as const;
@@ -87,6 +93,19 @@ function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
     }
   }
 
+  const scriptsMatch = frontmatterText.match(/^scripts:\s*\n((?:[ \t]+[^\n]*(?:\n[ \t]+[^\n]+)*\n?)*)/m);
+  if (scriptsMatch) {
+    const scriptsBlock = scriptsMatch[1];
+    const scripts: CommandScripts = {};
+    const shMatch = scriptsBlock.match(/sh:\s*(.+)/m);
+    if (shMatch) {
+      scripts.sh = shMatch[1].trim();
+    }
+    if (Object.keys(scripts).length > 0) {
+      result.scripts = scripts;
+    }
+  }
+
   return result;
 }
 
@@ -123,6 +142,10 @@ function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
       entry.agent = frontmatter.handoffs[0].agent;
     }
 
+    if (frontmatter?.scripts) {
+      entry.scripts = frontmatter.scripts;
+    }
+
     commands.set(commandName, entry);
   }
 
@@ -143,7 +166,8 @@ function registerCommands(config: Config, projectRoot: string): void {
       template: entry.template,
       description: entry.description,
       agent: entry.agent,
-    };
+      scripts: entry.scripts,
+    } as never;
   }
 }
 
