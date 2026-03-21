@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -151,6 +151,73 @@ describe("sdd plugin", () => {
       type: "text",
       text: "/implement",
     });
+  });
+
+  it("runs pre-scripts through command.execute.before for slash commands", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-command-hook-"));
+    mkdirSync(path.join(projectRoot, ".specify", "scripts", "bash"), { recursive: true });
+    mkdirSync(path.join(projectRoot, "specs"));
+    await Bun.write(
+      path.join(projectRoot, ".specify", "scripts", "bash", "check-prerequisites.sh"),
+      "#!/bin/sh\nprintf '%s\\n' '{\"FEATURE_DIR\":\"/tmp/feat-auth\",\"AVAILABLE_DOCS\":[\"tasks.md\",\"plan.md\"]}'\n",
+    );
+    chmodSync(path.join(projectRoot, ".specify", "scripts", "bash", "check-prerequisites.sh"), 0o755);
+
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const output = {
+      parts: [],
+    } as Parameters<NonNullable<PluginHooks["command.execute.before"]>>[1];
+
+    await hooks["command.execute.before"]?.(
+      {
+        command: "implement",
+        sessionID: "session_1",
+        arguments: "",
+      },
+      output,
+    );
+
+    expect(output.parts).toHaveLength(1);
+    expect(output.parts[0]).toMatchObject({
+      type: "text",
+      synthetic: true,
+      sessionID: "session_1",
+    });
+    expect("text" in output.parts[0] ? output.parts[0].text : "").toContain("Feature workspace");
+    expect("text" in output.parts[0] ? output.parts[0].text : "").toContain("/tmp/feat-auth");
+    expect("text" in output.parts[0] ? output.parts[0].text : "").toContain("tasks.md, plan.md");
+  });
+
+  it("does not add pre-script context for commands without scripts", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-command-noscript-"));
+    mkdirSync(path.join(projectRoot, ".specify"));
+    mkdirSync(path.join(projectRoot, "specs"));
+    mkdirSync(path.join(projectRoot, ".opencode", "command"), { recursive: true });
+    await Bun.write(
+      path.join(projectRoot, ".opencode", "command", "custom.md"),
+      `---
+description: Custom command
+agent: build
+---
+
+# Content`,
+    );
+
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const output = {
+      parts: [],
+    } as Parameters<NonNullable<PluginHooks["command.execute.before"]>>[1];
+
+    await hooks["command.execute.before"]?.(
+      {
+        command: "custom",
+        sessionID: "session_1",
+        arguments: "",
+      },
+      output,
+    );
+
+    expect(output.parts).toHaveLength(0);
   });
 
   it("does NOT inject the /sdd template for slash commands with arguments", async () => {

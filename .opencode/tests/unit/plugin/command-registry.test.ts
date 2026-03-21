@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 
-import { discoverCommands, parseYamlFrontmatter } from "../../../src/plugin/command-registry";
+import { discoverCommands, parseYamlFrontmatter, registerCommands } from "../../../src/plugin/command-registry";
 
 describe("command-registry", () => {
   describe("parseYamlFrontmatter", () => {
@@ -205,7 +205,23 @@ description: SDD command
       const entry = commands.get("sdd");
 
       expect(entry).toBeDefined();
-      expect(entry!.template).toBe(".opencode/command/sdd.md");
+      expect(entry!.template).toBe(path.join(testRoot, ".opencode", "command", "sdd.md"));
+
+      rmSync(testRoot, { recursive: true, force: true });
+    });
+
+    it("registers bundled commands with resolvable template paths before repo init", () => {
+      const testRoot = path.join(tmpdir(), "sdd-bundle-config-" + Date.now());
+      rmSync(testRoot, { recursive: true, force: true });
+      mkdirSync(testRoot, { recursive: true });
+
+      const config = {} as Parameters<typeof registerCommands>[0];
+      registerCommands(config, testRoot);
+
+      expect(config.command).toBeDefined();
+      expect(config.command?.["sdd-init"]).toBeDefined();
+      expect(config.command?.["sdd-init"]?.template).toContain("managed-assets");
+      expect(config.command?.["sdd-init"]?.template).toEndWith(path.join(".opencode", "command", "sdd-init.md"));
 
       rmSync(testRoot, { recursive: true, force: true });
     });
