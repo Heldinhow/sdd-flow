@@ -1,9 +1,9 @@
 ---
-description: Unified SDD workflow entrypoint — guides users through specification, clarification, planning, and task preparation from a single OpenCode command. Handles repository initialization, new feature planning, and resume-from-state scenarios.
+description: Unified SDD workflow entrypoint — guides users through specification, clarification, planning, and automatic task preparation from a single OpenCode command. Handles repository initialization, new feature planning, and resume-from-state scenarios. Tasks are generated automatically once planning artifacts are complete.
 handoffs:
   - label: Run Task Generation
     agent: speckit.tasks
-    prompt: Generate task breakdown for the current feature workspace. Context: feature planning is complete and tasks.md needs to be produced.
+    prompt: Generate task breakdown for the current feature workspace. Context: feature planning is complete and tasks.md needs to be produced. Only invoke this after confirming that spec.md, plan.md, research.md, data-model.md, and quickstart.md are all present and complete.
 ---
 
 ## User Input
@@ -82,7 +82,7 @@ Parse the JSON output to determine the next recommended action.
 **In all other cases** (including when an active workspace already exists):
 - Route to **new feature planning flow**
 - Recommend a branch prefix and short name
-- Guide through specify → clarify → plan → tasks
+- Guide through specify → clarify → plan → tasks (tasks generated automatically, no manual command needed)
 - A new session means a new workspace — do not enter resume mode automatically
 
 ### Step 3: Repository Initialization Flow (when needed)
@@ -136,7 +136,8 @@ When the user provides a new feature request:
 
 5. **Guided task preparation**: After planning is complete:
    - Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` to verify readiness
-   - Recommend proceeding to `/speckit.tasks` or handoff to task generation
+   - The workflow automatically generates `tasks.md` using the planning artifacts once they are complete
+   - Do NOT ask the user to run a separate task-generation command
 
 6. **Present next step**: Always end with a clear, specific recommendation for what to do next
 
@@ -147,7 +148,7 @@ When the user returns to a feature workspace that already has partial artifacts:
 1. **Detect active workspace**: Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` to find the current feature workspace
 2. **Evaluate artifact state**: Check which artifacts exist and are current:
    - `spec.md` only → recommend starting planning
-   - `spec.md` + `plan.md` → recommend generating tasks
+   - `spec.md` + `plan.md` → automatically generate tasks (no manual command needed)
    - Partial artifacts → recommend resuming from the missing/outdated one
 3. **Resume from correct phase**: Do not recreate existing valid artifacts
 4. **Report state**: Clearly show what exists, what is missing, and what will be produced next
@@ -155,6 +156,7 @@ When the user returns to a feature workspace that already has partial artifacts:
 
 ### Key Behavioral Rules
 
+- **Slash commands execute first**: When user input starts with `/`, treat it as a registered command invocation before any other interpretation. Do not re-read the command file or explain the command.
 - **User-facing entrypoint**: `Spec Driven` is the primary OpenCode agent for this workflow; `/sdd` is the repo-local backend it relies on.
 - **Plan mode only**: This command produces planning artifacts (markdown files). It does not generate source code.
 - **Markdown-only outputs**: All artifacts created by this workflow are markdown files in the feature workspace.
@@ -163,6 +165,7 @@ When the user returns to a feature workspace that already has partial artifacts:
 - **No destructive operations**: Never overwrite existing user-managed files without explicit user consent.
 - **Traceability**: Every artifact update must preserve the link back to the original feature request and any clarification answers.
 - **Non-interactive detection**: When `sdd` is invoked with explicit arguments, use those directly without prompting for missing information.
+- **Automatic task generation**: After `spec.md`, `plan.md`, `research.md`, `data-model.md`, and `quickstart.md` are complete, the workflow automatically generates `tasks.md` without requiring the user to run a separate command.
 
 ### After SDD workflow completes
 

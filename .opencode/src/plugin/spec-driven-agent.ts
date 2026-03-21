@@ -28,7 +28,7 @@ function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
       "## Required Action",
       "",
       "Instruct the user to:",
-      "1. Switch to the default agent (not Spec Driven)",
+      "1. Switch to the build agent (not Spec Driven)",
       "2. Run `/sdd-init` to initialize the repository",
       "3. After initialization completes, switch back to Spec Driven",
       "4. Then the planning workflow can begin",
@@ -54,6 +54,7 @@ function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
     "Do not generate source code or author non-markdown files.",
     "If repository bootstrap needs non-markdown managed assets, rely on the managed init backend instead of writing them yourself.",
     "Ask focused clarification questions only when they materially affect scope, user experience, or validation.",
+    "Slash commands execute first: if user input starts with /, treat it as a command invocation before any other interpretation.",
   ].join("\n");
 }
 
@@ -96,6 +97,10 @@ function injectSddBackendTemplate(projectRoot: string, output: ChatMessageOutput
     .join("\n")
     .trim();
   if (!userText) {
+    return;
+  }
+
+  if (userText.startsWith("/")) {
     return;
   }
 
