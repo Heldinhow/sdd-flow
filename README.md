@@ -1,35 +1,49 @@
 # sdd-flow
 
 <div align="center">
-  <h3><em>Spec-Driven Development for OpenCode, from one visible agent.</em></h3>
+  <h1>sdd-flow</h1>
+  <p><strong>Spec-Driven Development for OpenCode</strong></p>
+  <p>A plugin that injects a guided SDD workflow into your repository development — one visible agent, one consistent process, markdown artifacts you own.</p>
 </div>
 
-<p align="center">
-  <strong>Add <code>Spec Driven</code> to OpenCode, bootstrap SDD assets inside any repository, and keep planning output in markdown.</strong>
-</p>
+---
 
-`sdd-flow` is an OpenCode-focused Spec-Driven Development workflow plugin and repository bootstrap kit.
+## What Problem It Solves
 
-It provides:
-- a visible `Spec Driven` primary agent in OpenCode for guided SDD
-- a repo-local `/sdd` backend for init, specify, clarify, plan, and tasks
-- compatibility wrappers for `speckit.specify`, `speckit.clarify`, `speckit.plan`, and `speckit.tasks`
-- repo bootstrap that installs and merges managed `.opencode/` and `.specify/` assets
-- a markdown-only planning flow with typed branch prefixes like `feat-short-name`
+`sdd-flow` is an OpenCode plugin that brings Spec-Driven Development to any repository. Instead of starting a feature request with a blank slate, the workflow guides you through specification, clarification, planning, and task preparation — producing a complete, traceable artifact set in `specs/<feature>/` before a single line of code is written.
 
-## Get Started
+It is inspired by [Spec Kit](https://github.com/github/spec-kit) and [OpenSpec](https://github.com/Fission-AI/OpenSpec) as reference models for spec-first, artifact-driven development, adapted specifically for the OpenCode agent experience.
 
-### 1. Install the plugin globally
+## Key Concepts
+
+| Concept | Role |
+|---------|------|
+| **`Spec Driven`** | The visible planning agent registered by the plugin. Stays in plan mode. Only authors markdown. |
+| **`/sdd`** | The repo-local backend command that orchestrates the full guided workflow under `Spec Driven`. |
+| **`/sdd-init`** | A **one-time** bootstrap step that installs or merges managed workflow assets into a repository. Runs in build mode. |
+| **`/implement`** | Transitions to build mode and executes the work defined in `tasks.md`, phase by phase. |
+| **Managed assets** | The packaged scaffold (`.opencode/`, `.specify/`, `AGENTS.md`) that `sdd-init` installs or merges non-destructively. |
+| **Artifact guard** | The [`sdd-artifact-guard` skill](#workflow-guarantees) enforces the correct ordering and completeness of SDD artifacts. |
+
+---
+
+## How the Workflow Works
+
+The end-to-end flow has four distinct stages. Read this section to understand what each step does and which agent or command owns it.
+
+```
+install → /sdd-init → Spec Driven + /sdd → /implement
+```
+
+### Stage 1 — Install and Configure
+
+Install the plugin globally and add it to your OpenCode configuration.
 
 ```bash
 npm install -g @helldinhow/sdd-flow-opencode-plugin@latest
 ```
 
-This also installs the `sdd-artifact-guard` skill to `~/.opencode/skills/`.
-
-### 2. Add the plugin to OpenCode
-
-Recommended for personal use: add the plugin to `~/.config/opencode/opencode.json`.
+Add it to your OpenCode config (`~/.config/opencode/opencode.json` or a project-level `opencode.json`):
 
 ```json
 {
@@ -38,109 +52,140 @@ Recommended for personal use: add the plugin to `~/.config/opencode/opencode.jso
 }
 ```
 
-For a repo-shared setup, use the same `plugin` entry in a project-level `opencode.json` at the repository root. That file is separate from the managed `.opencode/` directory that `sdd-flow` bootstraps later.
+OpenCode installs npm plugins automatically at startup. No `npm install` inside the target repository is needed.
 
-> [!IMPORTANT]
-> OpenCode installs npm plugins automatically at startup with Bun and caches their dependencies. Normal plugin usage does not require running `npm install` inside the target repository.
+### Stage 2 — One-Time Repository Bootstrap (`/sdd-init`)
 
+**This step runs once per repository. Do not repeat it for each new feature.**
 
-
-After saving the config, start or restart OpenCode in a repository so it can install the package and load the plugin.
-
-### 3. Open any repository in OpenCode
-
-```bash
-opencode /path/to/your-repo
-```
-
-### 4. Select `Spec Driven`
-
-- `Spec Driven` is the user-facing SDD entrypoint
-- it runs in plan mode
-- it only authors markdown planning artifacts under `specs/**/*.md`
-- it relies on `/sdd` as the repo-local backend after bootstrap
-
-After OpenCode loads the plugin, `Spec Driven` should appear in the available agent list. If it does not appear, restart OpenCode and confirm that the package name in your config is exactly `@helldinhow/sdd-flow-opencode-plugin`. If the package is still unpublished, use the Local Development flow below instead.
-
-### 5. Let the repository bootstrap itself when needed
-
-If the repository is missing SDD workflow assets, `Spec Driven` is designed to route you into the managed init path so the workflow can install or merge the stack non-destructively.
-
-### 6. Continue the guided planning flow
-
-After bootstrap:
-- keep using `Spec Driven` as the conversational entrypoint
-- let `/sdd` remain the canonical repo-local backend command
-- expect repository state to drive resume behavior
-- keep planning outputs in markdown artifacts under `specs/<feature>/`
-
-## What It Does
-
-- registers a visible `Spec Driven` primary agent in OpenCode
-- keeps the guided agent in plan mode with markdown-only output
-- bootstraps repo-local `.opencode/` and `.specify/` assets when they are missing
-- preserves compatibility with the existing `speckit.*` command surface
-- uses typed branch prefixes like `feat-short-name` instead of numeric-only names
-
-## How It Works
-
-1. Add the plugin package to OpenCode config.
-2. Open a repository in OpenCode.
-3. Select `Spec Driven`.
-4. Bootstrap `.opencode/` and `.specify/` if the repository is not initialized yet.
-5. Continue specification, clarification, planning, and task preparation through one guided flow.
-
-## Repository Bootstrap
-
-The plugin ships a **managed assets bundle** inside the npm package at `.opencode/managed-assets/`. This bundle contains everything required for command discovery and repository bootstrap:
+Open any repository in OpenCode, switch to the **build** agent, and run:
 
 ```
-.opencode/managed-assets/
-├── .opencode/command/     # All SDD command markdown files
-├── .specify/scripts/bash/ # Workflow shell scripts
-├── .specify/templates/    # Planning artifact templates
-├── .specify/memory/       # Constitution template
-└── AGENTS.md             # Development guidelines
+/sdd-init
 ```
 
-On first install, the plugin registers commands directly from this bundled scaffold even when the consumer repository has no local `.opencode/command/` yet. The bootstrap/init flow copies missing scaffold files from the bundle into the target repository non-destructively.
+`/sdd-init` uses the build agent because it needs write access to create the managed asset directories and files. It installs or merges the following into the target repository:
 
-Bootstrap rules:
+- `.specify/` — workflow scripts, templates, and constitution storage
+- `.opencode/` — command surface and plugin runtime integration
+- `specs/` — feature workspace root
+- `AGENTS.md` — development guidelines for the repository
 
-- preserve existing compatible user customizations in `.opencode/` and `.specify/`
-- install or merge missing managed files non-destructively
-- keep `Spec Driven` as the primary entrypoint while `/sdd` remains the repo-local backend
+**Non-destructive by design.** If a file already exists, `/sdd-init` surfaces it for review instead of overwriting it. Your customizations are preserved.
 
-## Maintaining the Bundle
+After init completes, switch back to **Spec Driven** to start planning.
 
-The bundle at `.opencode/managed-assets/` must be kept in sync with the authoring sources whenever managed assets change. To refresh the bundle before publishing:
+### Stage 3 — Plan with `Spec Driven` + `/sdd`
 
-```bash
-# From the sdd-flow repository root
-cp .opencode/command/*.md .opencode/managed-assets/.opencode/command/
-cp .specify/scripts/bash/*.sh .opencode/managed-assets/.specify/scripts/bash/
-cp -r .specify/templates/* .opencode/managed-assets/.specify/templates/
-cp .specify/memory/* .opencode/managed-assets/.specify/memory/
-cp AGENTS.md .opencode/managed-assets/AGENTS.md
+Once the repository is initialized, use **`Spec Driven`** as your conversational planning agent. It stays in plan mode and only writes markdown planning artifacts. All backend orchestration goes through `/sdd`.
+
+The full planning loop is:
+
+```
+Spec Driven + /sdd
+  ├── specify      → spec.md (user stories, acceptance criteria, requirements)
+  ├── clarify      → iterative Q&A to resolve ambiguity
+  ├── plan         → plan.md + research.md + data-model.md + quickstart.md
+  └── tasks        → tasks.md (phase-by-phase task breakdown)
 ```
 
-Then run the packaging verification:
+Each artifact lives in `specs/<branch-name>/`:
 
-```bash
-cd .opencode && bun test tests/unit/packaging/
+| Artifact | Purpose |
+|----------|---------|
+| `spec.md` | Feature specification with user stories and acceptance scenarios |
+| `plan.md` | Implementation plan with architecture, tech stack, and file structure |
+| `research.md` | Technical decisions, constraints, options considered, and rationale |
+| `data-model.md` | Entity definitions and data relationships (when applicable) |
+| `quickstart.md` | Quick verification commands and integration patterns |
+| `tasks.md` | Task breakdown organized by phase and user story |
+
+**Session-scoped workspace rule.** Every new `Spec Driven` session creates a fresh workspace under `specs/` by default. Resume an existing workspace only when you explicitly ask to continue a named feature or branch.
+
+### Stage 4 — Execute with `/implement`
+
+When the planning package is complete, run:
+
+```
+/implement
 ```
 
-Before publishing a new version, run the full prepublish check:
+`/implement` loads the planning artifacts and transitions to the **build** agent to execute the work described in `tasks.md`. It runs phase by phase, respects task dependencies and parallel markers (`[P]`), and marks completed tasks as `[X]` in the tasks file.
 
-```bash
-cd .opencode && bun run prepublishOnly
-```
+---
 
-This runs typecheck and the packaging verification suite to block releases with missing or stale bundle assets.
+## Workflow Guarantees
+
+### Artifact ordering and completeness
+
+The [`sdd-artifact-guard` skill](.opencode/skills/sdd-artifact-guard/SKILL.md) is included with the plugin to enforce the SDD artifact creation contract:
+
+- **spec.md** must exist and be approved before **plan.md** is generated
+- **plan.md** must be complete before **tasks.md** is created
+- All complementary artifacts (**research.md**, **data-model.md**, **quickstart.md**) are produced alongside planning
+- No artifact is recreated if it already exists and is valid
+
+This means the workflow produces a complete, traceable artifact set — not a loose collection of markdown files.
+
+### Non-destructive initialization
+
+`/sdd-init` classifies every managed asset into one of three buckets:
+
+- **ADD** — copy the file from the package bundle into the repository
+- **KEEP** — preserve the existing file (no change)
+- **REVIEW** — surface the file for manual decision (existing file differs from bundle)
+
+Your repository's existing customizations are never blindly overwritten.
+
+### Plan-mode only for planning
+
+`Spec Driven` is permission-restricted to markdown editing in `specs/**/*.md` and selected workflow shell scripts. It cannot author source code. The build agent (`/implement`) handles execution.
+
+---
+
+## Architecture and Code Map
+
+This section maps each user-facing claim to the files that implement it, so contributors can verify behavior directly.
+
+### Plugin registration and agent prompt
+
+- `.opencode/src/plugin/spec-driven-agent.ts` — registers `Spec Driven` as a primary agent, injects the backend command template into chat, and enforces plan-mode permissions
+
+### Command templates (user-visible behavior)
+
+- `.opencode/command/sdd.md` — `/sdd` workflow entrypoint; routes between init, new planning, and resume; enforces session-scoped workspace rule
+- `.opencode/command/sdd-init.md` — `/sdd-init` bootstrap command; creates managed asset directories and constitution; runs in build mode
+- `.opencode/command/implement.md` — `/implement` execution command; loads artifacts and hands off to build agent
+
+### Workflow runtime
+
+- `.opencode/src/workflow/phase-router.ts` — routes between `INIT`, `SPECIFY`, `CLARIFY`, `PLAN`, `TASKS`, `COMPLETE` based on repo and artifact state
+- `.opencode/src/workflow/orchestrate-planning.ts` — builds the command pipeline (`create-new-feature`, `setup-plan`, `check-prerequisites`) for the planning flow
+- `.opencode/src/workflow/run-guided-sdd.ts` — orchestrates the guided SDD loop
+- `.opencode/src/init/run-init.ts` — executes non-destructive asset merge using the add/keep/review classification
+
+### Managed assets
+
+- `.opencode/managed-assets/` — the packaged bundle that is published to npm; must stay in sync with the authoring sources above
+
+### Shell script backend primitives
+
+- `.specify/scripts/bash/check-prerequisites.sh` — detects repo state, active workspace, and artifact availability
+- `.specify/scripts/bash/create-new-feature.sh` — creates feature workspace, branch, and initial `spec.md` from template
+- `.specify/scripts/bash/setup-plan.sh` — copies the plan template and resolves feature paths
+
+### Artifact templates
+
+- `.specify/templates/spec-template.md`
+- `.specify/templates/plan-template.md`
+- `.specify/templates/tasks-template.md`
+- `.specify/templates/constitution-template.md`
+
+---
 
 ## Local Development
 
-Use this path when contributing to the plugin itself or validating the flow before the public npm release is available.
+Clone the repository and open it in OpenCode:
 
 ```bash
 git clone https://github.com/Heldinhow/sdd-flow.git
@@ -148,71 +193,103 @@ cd sdd-flow
 opencode .
 ```
 
-Then:
+OpenCode auto-loads `.opencode/plugins/sdd.ts`. Select **`Spec Driven`** to start working on the plugin itself.
 
-- OpenCode auto-loads `.opencode/plugins/sdd.ts`
-- select `Spec Driven`
-- the existing repo-local `.opencode/`, `.specify/`, and `specs/` assets let the workflow resume from the current planning state
-
-When contributing, keep the managed assets bundle in sync with authoring sources (see "Maintaining the Bundle" above).
-
-If OpenCode does not install dependencies automatically for this cloned development repository on first load, run this once:
+If dependencies are not installed automatically on first load:
 
 ```bash
 cd .opencode && bun install
 ```
 
+### Keeping managed assets in sync
+
+The bundle in `.opencode/managed-assets/` is what gets published to npm. The authoring sources are the files listed in the architecture map above. Before publishing a new version, sync the bundle:
+
+```bash
+cp .opencode/command/*.md .opencode/managed-assets/.opencode/command/
+cp .specify/scripts/bash/*.sh .opencode/managed-assets/.specify/scripts/bash/
+cp -r .specify/templates/* .opencode/managed-assets/.specify/templates/
+cp .specify/memory/* .opencode/managed-assets/.specify/memory/
+cp AGENTS.md .opencode/managed-assets/AGENTS.md
+```
+
+### Verification commands
+
+```bash
+# Type-check
+cd .opencode && bunx tsc --noEmit
+
+# Run tests
+cd .opencode && bun test
+
+# Full prepublish check (typecheck + tests + packaging)
+cd .opencode && bun run prepublishOnly
+```
+
+---
+
+## Compatibility Wrappers
+
+The plugin preserves compatibility with the existing `speckit.*` command surface:
+
+- `/speckit.specify` — wraps `/sdd` for spec creation
+- `/speckit.clarify` — handles clarification loop
+- `/speckit.plan` — generates the planning package
+- `/speckit.tasks` — produces the task breakdown
+- `/speckit.implement` — wraps `/implement`
+- `/speckit.constitution` — interactive constitution creation
+
+These are provided for environments that already use Speckit-style commands. The primary user-facing entrypoint remains **`Spec Driven`**.
+
+---
+
+## Why This Exists
+
+Spec-Driven Development means letting a structured artifact set drive implementation: specs before code, plan before tasks, tasks before execution. The workflow produces markdown files you own, can audit, and can version alongside your code.
+
+`sdd-flow` brings this model to OpenCode by:
+
+- exposing one visible agent (`Spec Driven`) that stays in plan mode and only authors markdown
+- providing a repo-local backend (`/sdd`) that orchestrates the planning loop without requiring external services
+- installing a managed asset scaffold that any developer can adopt without scaffolding a new repo from scratch
+- enforcing artifact ordering and completeness through the `sdd-artifact-guard` skill
+- making the bootstrap process non-destructive so existing repositories are safe to initialize
+
+It is not a replacement for Spec Kit or OpenSpec — it is an implementation of SDD principles adapted for OpenCode's agent model.
+
+---
+
+## Contributing
+
+Contributions are welcome. When contributing:
+
+1. All behavioral changes must be reflected in the command templates (`.opencode/command/*.md`) **and** the managed assets bundle (`.opencode/managed-assets/`)
+2. Run `bunx tsc --noEmit` and `bun test` before opening a pull request
+3. The `sdd-artifact-guard` skill must not be broken by any change to the artifact creation flow
+4. New commands should follow the existing frontmatter format with `handoffs` declaring the execution agent
+
+---
+
 ## Project Layout
 
 ```
-.opencode/
-├── managed-assets/       # Publishable scaffold bundle (synced with authoring sources)
-├── plugin/               # Package export entry
-├── plugins/              # Local OpenCode development loader
-├── src/                  # Plugin runtime source
-├── command/              # Authoring source for command markdown
-├── scripts/              # Build and utility scripts
-├── skills/              # OpenCode skills
-└── tests/               # Test suite
-.specify/
-specs/
-AGENTS.md
-README.md
+sdd-flow/
+├── .opencode/
+│   ├── command/              # Authoring source for /sdd, /sdd-init, /implement, speckit.*
+│   ├── managed-assets/       # Synced bundle published to npm
+│   ├── plugin/               # Package export entry
+│   ├── plugins/              # Local development loader
+│   ├── src/
+│   │   ├── init/             # Non-destructive asset merge runtime
+│   │   ├── plugin/           # Agent registration and template injection
+│   │   └── workflow/         # Phase routing, orchestration, resume logic
+│   └── tests/                # Unit and integration tests
+├── .specify/
+│   ├── scripts/bash/         # Workflow shell scripts (check-prerequisites, create-new-feature, setup-plan)
+│   ├── templates/            # Artifact templates (spec, plan, tasks, constitution)
+│   └── memory/               # Constitution storage
+├── specs/                    # Feature workspaces created by the workflow
+├── .claude/                  # Napkin runbook and session notes
+├── AGENTS.md                 # Development guidelines
+└── README.md
 ```
-
-Main implementation paths:
-
-- plugin runtime: `.opencode/src/`
-- project plugin loader: `.opencode/plugins/sdd.ts`
-- package export entrypoint: `.opencode/plugin/sdd.ts`
-- command surface: `.opencode/command/` (authoring source)
-- managed assets bundle: `.opencode/managed-assets/` (published to npm)
-- tests: `.opencode/tests/`
-- workflow backend scripts and templates: `.specify/`
-
-## Verification
-
-Run from the repository root:
-
-```bash
-cd .opencode && bun test
-cd .opencode && bunx tsc --noEmit
-```
-
-## Current Status
-
-Validated today:
-
-- OpenCode can auto-load the local project plugin from `.opencode/plugins/`
-- the `Spec Driven` agent is registered and visible to OpenCode
-- `Spec Driven` stays in plan mode and is permission-restricted to markdown planning artifacts
-- the repo-local `/sdd` backend remains the workflow anchor
-
-In progress:
-
-- broader first-run bootstrap UX for arbitrary external repositories
-- final end-user distribution polish around npm-based plugin installation plus repo bootstrap
-
-## Goal
-
-The long-term goal is to make OpenCode feel like a simpler, repo-local version of Spec Kit: one visible planning agent, guided clarification, typed branch naming, and reproducible markdown planning artifacts.
