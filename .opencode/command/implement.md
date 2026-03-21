@@ -1,5 +1,6 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to build agent for code execution. When invoked, this command loads the active feature workspace, locates tasks.md, and begins implementation — it does NOT explain the command markdown file.
+agent: build
 handoffs:
   - label: Implement Tasks
     agent: build
