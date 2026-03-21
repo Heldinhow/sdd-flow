@@ -1,7 +1,33 @@
 {
-  "name": "sdd-flow-opencode-plugin",
-  "private": true,
+  "name": "@helldinhow/sdd-flow-opencode-plugin",
+  "version": "0.1.0",
+  "description": "OpenCode Spec-Driven Development workflow plugin and bootstrap kit",
+  "homepage": "https://github.com/Heldinhow/sdd-flow#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Heldinhow/sdd-flow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Heldinhow/sdd-flow/issues"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "sdd",
+    "spec-driven-development",
+    "planning"
+  ],
   "type": "module",
+  "exports": {
+    ".": "./plugin/sdd.ts"
+  },
+  "files": [
+    "plugin/**/*.ts",
+    "src/**/*.ts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"

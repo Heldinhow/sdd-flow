@@ -19,6 +19,7 @@ As a repository maintainer, I want to initialize a repository for the unified SD
 
 1. **Given** a repository without the guided SDD setup, **When** a maintainer initializes the workflow, **Then** the repository receives the required planning assets and exposes one clear SDD entrypoint in OpenCode.
 2. **Given** a repository with partial workflow assets, **When** a maintainer initializes the workflow, **Then** the repository is brought to a usable guided-SDD state through a non-destructive merge that preserves existing compatible customizations.
+3. **Given** the plugin is installed in OpenCode, **When** a user opens the available agents and chooses `Spec Driven`, **Then** the guided SDD flow starts without requiring the user to know or type `/sdd` manually.
 
 ---
 
@@ -34,6 +35,7 @@ As a feature author, I want one guided SDD conversation that takes me from featu
 
 1. **Given** a repository with guided SDD enabled, **When** a feature author starts a new planning session, **Then** the system creates or selects the correct feature workspace, assigns a conventional English change-type prefix with the short name for the feature branch, and guides the user through the planning flow from the initial request onward.
 2. **Given** an active planning session, **When** the user completes the required inputs, **Then** the system produces the expected planning artifacts without the user having to invoke separate phase commands manually.
+3. **Given** a user is working through `Spec Driven`, **When** the workflow writes planning outputs, **Then** the agent only authors markdown planning artifacts and does not generate source code.
 
 ---
 
@@ -69,6 +71,10 @@ As a returning user, I want the unified SDD workflow to continue from the reposi
 ### Edge Cases
 
 - What happens when the repository already contains `.specify`, `.opencode`, or prior planning assets managed by another workflow version?
+- What happens when the plugin is installed globally in OpenCode but the current repository has not yet been initialized with SDD assets?
+- How are non-markdown managed assets installed during repository init while keeping `Spec Driven` itself in plan mode?
+- How should the README describe the npm-first install path before the public package is published without misleading users about current availability?
+- Which OpenCode config example should the documentation recommend for personal installation versus repo-shared installation?
 - How does the system handle a feature request that is too vague to produce independently testable user stories on the first pass?
 - What happens when some planning artifacts already exist but are incomplete, missing, or inconsistent with the latest user answers?
 - How does the workflow behave when the user ends clarification early and chooses to proceed with unresolved lower-impact ambiguity?
@@ -97,6 +103,17 @@ As a returning user, I want the unified SDD workflow to continue from the reposi
 - **FR-016**: The system MUST present a clear next-step recommendation at the end of each major planning phase.
 - **FR-017**: The system MUST generate feature branch names with a conventional English change-type prefix combined with the short name instead of numeric-only prefixes.
 - **FR-018**: The system MUST recommend the best-fit change-type prefix for a new feature branch based on the user's request and allow that prefix to be changed before the feature context is finalized.
+- **FR-019**: The system MUST register a visible OpenCode primary plan-mode agent named `Spec Driven` as part of the plugin installation experience.
+- **FR-020**: The system MUST allow users to start the guided SDD flow by selecting `Spec Driven` without requiring manual invocation of `/sdd`.
+- **FR-021**: The system MUST install `/sdd` into the repository as the canonical repo-local workflow backend while keeping `Spec Driven` as the primary user-facing entrypoint.
+- **FR-022**: The system MUST restrict direct `Spec Driven` file edits to markdown planning artifacts and deny direct source-code authoring.
+- **FR-023**: The system MUST handle installation of non-markdown managed workflow assets through the managed repository-init backend rather than through agent-authored code generation.
+- **FR-024**: The system MUST support distribution as a public scoped npm package named `@helldinhow/sdd-flow-opencode-plugin` so users can reference it directly from the OpenCode `plugin` config array.
+- **FR-025**: The system MUST document the recommended end-user install path as adding `@helldinhow/sdd-flow-opencode-plugin` to OpenCode config instead of cloning the repository.
+- **FR-026**: The system MUST document that OpenCode installs npm plugins automatically at startup and caches their dependencies, so normal plugin usage does not require a manual `npm install` step.
+- **FR-027**: The system MUST keep a separate contributor-oriented local-development flow that explains how to clone the repository and validate the plugin without making that flow the primary install path.
+- **FR-028**: The system MUST refresh the root README information architecture to follow a more scannable spec-kit-inspired structure with a hero section, a short Get Started path near the top, npm-first installation guidance, and secondary contributor details later in the document.
+- **FR-029**: The system MUST include at least one concrete OpenCode config example for npm installation and note that both global and per-project config locations are supported.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -108,6 +125,8 @@ As a returning user, I want the unified SDD workflow to continue from the reposi
 ## Assumptions
 
 - The first release targets OpenCode as the only runtime environment.
+- OpenCode can expose installed plugin-provided agents in a user-selectable agent list.
+- OpenCode can load both regular and scoped npm plugin packages from the `plugin` array in user or project config and install them automatically with Bun at startup.
 - Existing phase-based `speckit.*` commands remain available as compatibility paths unless explicitly retired in a later iteration.
 - The unified SDD workflow may reuse existing project automation as long as the user experience stays centered on a single entrypoint.
 - Clarification is triggered only when unresolved ambiguity would materially change scope, user experience, or downstream validation.
@@ -122,3 +141,17 @@ As a returning user, I want the unified SDD workflow to continue from the reposi
 - **SC-003**: For features that require clarification, the workflow resolves critical ambiguity in 5 or fewer accepted questions and continues without losing the active feature context.
 - **SC-004**: 100% of pilot runs store the generated core planning artifacts in the expected feature workspace structure.
 - **SC-005**: At least 80% of pilot runs complete the planning flow on the first attempt without manual repair of artifact structure or workflow state.
+- **SC-006**: After plugin installation, a user can see `Spec Driven` in OpenCode and enter the guided SDD flow in under 1 minute without prior knowledge of `/sdd`.
+- **SC-007**: After npm publication, a user can add `@helldinhow/sdd-flow-opencode-plugin` to OpenCode config and see `Spec Driven` available without cloning the repository or manually installing plugin dependencies.
+
+## Clarifications
+
+### Session 2026-03-20
+
+- Q: Should installation expose a visible OpenCode agent or only a command alias? -> A: Expose a visible OpenCode agent named `Spec Driven`.
+- Q: Does repository initialization still need `/sdd`? -> A: Yes. `Spec Driven` is the user-facing entrypoint, while repository init installs `/sdd` as the repo-local backend command.
+- Q: How should `Spec Driven` behave during normal use? -> A: It must behave as a plan-mode agent that only authors markdown planning artifacts and does not generate code.
+- Q: What is the approved public npm package name? -> A: `@helldinhow/sdd-flow-opencode-plugin`.
+- Q: Which install path should the README prioritize? -> A: The npm-based OpenCode config flow, not `git clone`.
+- Q: Which external README style should guide the rewrite? -> A: Use the scannable `github/spec-kit` README structure as the model.
+- Q: Where should the clone-based flow live after the rewrite? -> A: In a secondary Local Development or Contributing section, not in the main quickstart.

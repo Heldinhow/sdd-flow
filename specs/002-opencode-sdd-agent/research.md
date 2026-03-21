@@ -8,6 +8,14 @@
   - **Node-only runtime**: Rejected because the existing local package evidence points to Bun-first workflows and there is no current Node-only setup to align with.
   - **Shell-only orchestration**: Rejected because the unified agent needs richer session, tool, and command coordination than shell scripts alone can safely provide.
 
+## Public npm Distribution Model
+
+- **Decision**: Publish the OpenCode plugin as a public scoped npm package named `@helldinhow/sdd-flow-opencode-plugin`, and instruct users to add that package to the OpenCode `plugin` array.
+- **Rationale**: OpenCode documentation and runtime config code both confirm that regular and scoped npm packages are supported in the `plugin` array and are installed automatically with Bun at startup. That matches the intended low-friction install path much better than clone-first onboarding.
+- **Alternatives considered**:
+  - **Manual `npm install` in user repositories**: Rejected because OpenCode already handles plugin installation and dependency caching when the package is listed in config.
+  - **Git-clone-first install**: Rejected as the default path because it adds contributor-only setup steps to the normal end-user experience.
+
 ## Workflow Orchestration Strategy
 
 - **Decision**: Keep `.specify/scripts/bash/*` and `.specify/templates/*` as the deterministic backend, and add one OpenCode entrypoint that orchestrates the full guided workflow.
@@ -32,6 +40,14 @@
 - **Alternatives considered**:
   - **Overwrite managed assets**: Rejected because it risks deleting local customizations.
   - **Install only into missing paths**: Rejected because it would leave stale managed files untouched and create inconsistent workflow states.
+
+## README Information Architecture
+
+- **Decision**: Rework the root README into a spec-kit-inspired, npm-first layout with a short hero, a Get Started section near the top, the public install flow first, and contributor cloning instructions later under Local Development or Contributing.
+- **Rationale**: The current README mixes the intended public distribution story with local contributor setup. The `github/spec-kit` README demonstrates a more scannable onboarding structure that fits a public npm package launch better.
+- **Alternatives considered**:
+  - **Keep the current repo-first README**: Rejected because it buries the package install story behind clone-and-run steps.
+  - **Remove local development instructions entirely**: Rejected because contributors still need a local validation path before and after npm publication.
 
 ## Planning Artifact Set
 

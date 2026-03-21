@@ -2,25 +2,34 @@
 
 ## Goal
 
-Validate that a repository can be initialized for the unified SDD workflow and that the planning phase produces the expected artifact package without requiring manual phase switching.
+Validate that a user can install the public npm plugin in OpenCode, initialize a repository for the unified SDD workflow, and produce the expected planning artifacts without manually switching between phase commands.
 
 ## Prerequisites
 
-- OpenCode is available in the target repository.
-- The repository contains the managed `.opencode` and `.specify` asset sets after initialization.
+- OpenCode is installed and configured.
+- The package `@helldinhow/sdd-flow-opencode-plugin` is published publicly on npm for the target validation path.
 - The feature specification already exists at `specs/002-opencode-sdd-agent/spec.md`.
 
-## Scenario 1: Initialize a Repository
+## Scenario 1: Install the Plugin from npm
+
+1. Add `@helldinhow/sdd-flow-opencode-plugin` to either `~/.config/opencode/opencode.json` for personal use or `opencode.json` in a target repository for a shared setup.
+2. Start OpenCode in any repository.
+3. Confirm that OpenCode installs the npm plugin automatically at startup.
+4. Confirm that `Spec Driven` appears in the agent list without cloning this repository.
+
+**Expected result**: The plugin is available through normal OpenCode configuration, and the user can start the guided SDD flow without a manual package-install step.
+
+## Scenario 2: Initialize a Repository
 
 1. Open the target repository in OpenCode.
-2. Start `/sdd` in repository-init mode.
+2. Select `Spec Driven` or start `/sdd` in repository-init mode.
 3. Confirm that the repository receives the managed `.opencode` command assets and `.specify` planning assets.
-4. If the repository already contained compatible managed files, confirm that the initialization keeps those customizations intact instead of replacing them destructively.
+4. If the repository already contained compatible managed files, confirm that initialization keeps those customizations intact instead of replacing them destructively.
 5. Confirm that the workflow exposes one clear primary entrypoint for guided SDD.
 
 **Expected result**: The repository is ready for guided planning, the managed assets are installed or merged safely, and the user can proceed without manually assembling prompts or scripts.
 
-## Scenario 2: Run the Planning Phase from One Guided Flow
+## Scenario 3: Run the Planning Phase from One Guided Flow
 
 1. Start `/sdd` with a new feature request.
 2. Confirm that the workflow recommends a branch prefix and short name before feature context is finalized.
@@ -30,7 +39,7 @@ Validate that a repository can be initialized for the unified SDD workflow and t
 
 **Expected result**: The user reaches a complete planning package from one guided interaction, with no need to manually invoke separate phase commands.
 
-## Scenario 3: Resume an Existing Feature Workspace
+## Scenario 4: Resume an Existing Feature Workspace
 
 1. Re-open a repository that already contains a partially completed feature workspace.
 2. Start `/sdd` again.

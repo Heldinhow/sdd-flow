@@ -119,6 +119,8 @@
 - [x] T032 [P] Update `.specify/templates/spec-template.md`, `.specify/templates/plan-template.md`, and `.specify/templates/tasks-template.md` for unified-entrypoint guidance and typed branch prefixes
 - [x] T033 Update `specs/002-opencode-sdd-agent/quickstart.md` with final command names and validation notes
 - [x] T034 Update `specs/002-opencode-sdd-agent/contracts/repo-init.md` and `specs/002-opencode-sdd-agent/contracts/unified-sdd-workflow.md` to match shipped behavior
+- [x] T035 [P] Update `.opencode/package.json` and `.opencode/plugin/sdd.ts` for the public scoped npm package `@helldinhow/sdd-flow-opencode-plugin` and publishable plugin exports
+- [x] T036 [P] Update `README.md` to lead with the npm-based OpenCode config install flow, explain automatic plugin installation, and move clone-based setup to a secondary Local Development section
 
 ---
 
@@ -208,3 +210,4 @@ Task: "Create the guided planning runner in .opencode/src/workflow/run-guided-sd
 - Keep file-path changes aligned with the nested `.opencode/` and `.specify/` structure defined in `plan.md`
 - The current prerequisite scripts resolve the git root above `/Users/helder/sdd-flow`; T004-T006 should remove that mismatch before relying on automated path discovery
 - Post-implementation review: `T014`, `T019`, `T023`, and `T029` remain open because end-to-end init success reporting, full planning artifact generation, clarification rewrites, and resume edge cases still need follow-up work.
+- Public package scope approved for release planning: `@helldinhow/sdd-flow-opencode-plugin`.

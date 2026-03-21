@@ -1,1 +1,1 @@
-export { default } from "../src/plugin/index";
+export { default, default as sddPlugin } from "../src/plugin/index";
