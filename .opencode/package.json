@@ -25,7 +25,8 @@
     "plugin/**/*.ts",
     "src/**/*.ts",
     "skills/**/*.md",
-    "scripts/**/*.js"
+    "scripts/**/*.js",
+    "managed-assets/**/*"
   ],
   "publishConfig": {
     "access": "public"
@@ -33,7 +34,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "postinstall": "node scripts/install-skill.js"
+    "postinstall": "node scripts/install-skill.js",
+    "prepublishOnly": "bunx tsc --noEmit && bun test tests/unit/packaging/"
   },
   "dependencies": {
     "@opencode-ai/plugin": "1.2.27",

@@ -16,8 +16,8 @@ describe("repo initialization modules", () => {
     const relativePaths = manifest.map((asset) => asset.relativePath);
 
     expect(relativePaths).toContain(".opencode/command/sdd.md");
-    expect(relativePaths).toContain(".opencode/plugins/sdd.ts");
     expect(relativePaths).toContain(".specify/scripts/bash/create-new-feature.sh");
+    expect(relativePaths).toContain(".specify/templates/spec-template.md");
     expect(relativePaths).toContain("AGENTS.md");
   });
 

@@ -1,5 +1,6 @@
 import { copyFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { detectRepoState } from "./detect-repo-state";
 import { buildManagedAssetManifest } from "./managed-assets";
@@ -22,8 +23,13 @@ function ensureParentDirectory(filePath: string): void {
   mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
+function resolvePackageRoot(): string {
+  return path.resolve(fileURLToPath(import.meta.url), "..", "..", "..");
+}
+
 function runInit(input: RunInitInput): RunInitResult {
-  const manifest = buildManagedAssetManifest(input.sourceRoot);
+  const bundleRoot = path.join(resolvePackageRoot(), "managed-assets");
+  const manifest = buildManagedAssetManifest(bundleRoot);
   const state = detectRepoState(input.targetRoot, manifest);
   const plan = createMergePlan(input.targetRoot, manifest);
 

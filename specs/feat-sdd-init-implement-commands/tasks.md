@@ -1,155 +1,102 @@
-# Tasks: SDD Init and Implement Commands
+# Tasks: Package and Bootstrap the SDD Command Scaffold
 
 **Input**: Design documents from `/specs/feat-sdd-init-implement-commands/`
 **Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅, quickstart.md ✅
 
-**Tests**: Unit tests are included for the plugin changes.
+**Tests**: Packaging/bootstrap regression coverage is required because the failure escaped through a publish/install gap.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing.
+**Organization**: Tasks are grouped by user story so the first-install command discovery fix can land independently from broader bootstrap hardening.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to
+- **[Story]**: Which user story this task supports
 
 ---
 
-## Phase 0: Command Registration (BLOCKER - Must Complete First)
+## Phase 1: Foundation - Make the scaffold publishable
 
-**Purpose**: Register commands with OpenCode plugin so `/sdd-init`, `/sdd`, and `/implement` are available
+**Purpose**: Ensure the npm package can actually ship every managed asset the runtime depends on.
 
-**Issue**: Command files exist in `.opencode/command/` but are NOT registered with OpenCode. The plugin needs to register commands via `config.command` in the `config` hook.
+- [ ] T001 Create a package-local managed asset bundle directory inside `.opencode/` that mirrors the required repo-local scaffold paths
+- [ ] T002 [P] Populate the bundled scaffold with command markdown for `/sdd-init`, `/sdd`, `/implement`, and supported `speckit.*` commands
+- [ ] T003 [P] Populate the bundled scaffold with required `.specify/scripts/bash/*`, `.specify/templates/*`, and `AGENTS.md`
+- [ ] T004 Update `.opencode/package.json` `files` and related package metadata so the bundled scaffold is included in the publishable artifact
 
-**User Story**: US5 - Command Discovery and Registration (Priority: P0)
-
-### Implementation
-
-- [X] T000a [US5] Create `.opencode/src/plugin/command-registry.ts` with:
-  - `parseYamlFrontmatter(content: string)` - Parse YAML frontmatter from command .md files
-  - `discoverCommands(projectRoot: string)` - Find all .md files in `.opencode/command/`
-  - `registerCommands(config: Config, projectRoot: string)` - Add commands to `config.command`
-
-- [X] T000b [US5] Update `.opencode/src/plugin/index.ts` to:
-  - Import `registerCommands` from `./command-registry`
-  - Call `registerCommands(config, projectRoot)` in the `config` hook after agent registration
-
-- [X] T000c [US5] Add unit tests for `command-registry.ts`:
-  - Test `parseYamlFrontmatter` extracts description and handoffs
-  - Test `discoverCommands` finds all .md files
-  - Test `registerCommands` populates config.command
-
-- [X] T000d [US5] Run typecheck: `cd .opencode && bunx tsc --noEmit`
-
-- [X] T000e [US5] Run unit tests: `cd .opencode && bun test`
-
-**Checkpoint**: Commands `/sdd-init`, `/sdd`, `/implement`, and all `speckit.*` commands are available in OpenCode
+**Checkpoint**: The package boundary now contains every managed asset required for command discovery and bootstrap.
 
 ---
 
-## Phase 1: Setup
+## Phase 2: User Story 1 - Commands appear after normal installation (Priority: P1) 🎯 MVP
 
-**Purpose**: Create command file structure
+**Goal**: The installed plugin registers the full SDD command set even when the consumer repo has no local `.opencode/command/` yet.
 
-- [X] T001 Create `.opencode/command/sdd-init.md` command file with YAML frontmatter
-- [X] T002 [P] Create `.opencode/command/implement.md` command file with YAML frontmatter
+**Independent Test**: Load the plugin against a clean fixture repo and verify the command palette contains `/sdd-init`, `/sdd`, `/implement`, and the supported `speckit.*` commands.
 
----
+### Tests for User Story 1
 
-## Phase 2: User Story 1 - Initialize SDD Workflow (Priority: P1)
-
-**Goal**: `/sdd-init` creates all required directories, files, and constitution interactively
-
-**Independent Test**: Run `/sdd-init` in a fresh repository and verify all artifacts are created
+- [ ] T005 [P] [US1] Extend `.opencode/tests/unit/plugin/command-registry.test.ts` to cover command discovery from the packaged scaffold when repo-local command files are absent
+- [ ] T006 [P] [US1] Add a package-shaped plugin initialization test that proves command metadata is registered from bundled command markdown
 
 ### Implementation for User Story 1
 
-- [X] T003 [US1] Add handoff configuration to `sdd-init.md` for default agent
-- [X] T004 [US1] Write Phase 1 checklist: Directory Structure (`.specify/`, `.opencode/`, `specs/`)
-- [X] T005 [US1] Write Phase 2 checklist: Template Files (copy from `.specify/templates/`)
-- [X] T006 [US1] Write Phase 3 checklist: Shell Scripts (copy to `.specify/scripts/bash/`)
-- [X] T007 [US1] Write Phase 4 checklist: OpenCode Integration (AGENTS.md, command files)
-- [X] T008 [US1] Write Phase 5 checklist: Constitution Creation (interactive prompting)
-- [X] T009 [US1] Write Phase 6 checklist: Verification (all files exist, no placeholders)
-- [X] T010 [US1] Add user instructions: "Switch back to Spec Driven agent after completion"
+- [ ] T007 [US1] Update `.opencode/src/plugin/command-registry.ts` to resolve command templates from repo-local scaffold first and packaged scaffold second
+- [ ] T008 [US1] Update `.opencode/src/plugin/index.ts` so command registration uses the bootstrap-aware source resolution during normal plugin startup
+- [ ] T009 [US1] Verify bundled command registration preserves descriptions and handoff agent metadata from frontmatter
 
-**Checkpoint**: `/sdd-init` command is complete and ready for testing
+**Checkpoint**: First-install command discovery works without requiring a pre-created consumer `.opencode/command/` directory.
 
 ---
 
-## Phase 3: User Story 2 - Automatic Planning Artifacts (Priority: P1)
+## Phase 3: User Story 2 - Bootstrap/init materializes the scaffold safely (Priority: P1)
 
-**Goal**: Planning workflow automatically creates research.md, data-model.md, quickstart.md without manual intervention
+**Goal**: Repo bootstrap/init copies missing scaffold assets from the packaged bundle without overwriting customized local files.
 
-**Independent Test**: Run `/sdd` for a new feature and verify all complementary files are created
+**Independent Test**: Run bootstrap/init against a fixture repo with missing and customized scaffold files, then verify missing files were added and differing files were preserved for review.
 
-**Note**: This is already implemented in the existing `/sdd` workflow (Step 4 in sdd.md). This phase verifies integration with `/implement`.
+### Tests for User Story 2
 
-### Verification for User Story 2
+- [ ] T010 [P] [US2] Update `.opencode/tests/unit/init/repo-init.test.ts` to validate managed asset manifests built from the packaged scaffold source
+- [ ] T011 [P] [US2] Add a test that exercises bootstrap/init from the packaged scaffold into a clean consumer repo fixture
+- [ ] T012 [P] [US2] Add a test that preserves customized consumer files while still copying other missing scaffold assets
 
-- [ ] T011 [P] [US2] Verify `/sdd` creates `research.md` automatically during planning
-- [ ] T012 [P] [US2] Verify `/sdd` creates `data-model.md` when feature involves data entities
-- [ ] T013 [P] [US2] Verify `/sdd` creates `quickstart.md` with usage guide
-- [ ] T014 [P] [US2] Verify `/sdd` creates `tasks.md` automatically after planning
+### Implementation for User Story 2
 
-**Checkpoint**: Planning flow creates all required artifacts automatically
+- [ ] T013 [US2] Update `.opencode/src/init/managed-assets.ts` so the managed asset source resolves from the package-local scaffold bundle while keeping repo-relative target paths
+- [ ] T014 [US2] Update `.opencode/src/init/run-init.ts` to copy missing assets from the packaged bundle into the consumer repository
+- [ ] T015 [US2] If needed, update `.opencode/scripts/install-skill.js` or replace it with a broader bootstrap helper without coupling repo bootstrap to destructive postinstall behavior
+- [ ] T016 [US2] Verify bootstrap still reports differing existing files as review items instead of overwriting them
+
+**Checkpoint**: The packaged bundle can materialize a safe repo-local scaffold for later SDD flows.
 
 ---
 
-## Phase 4: User Story 3 - Execute Implementation (Priority: P2)
+## Phase 4: User Story 3 - Packaging regressions are blocked before release (Priority: P2)
 
-**Goal**: `/implement` hands off to default agent and loads all planning artifacts as context
+**Goal**: Release verification fails if the publishable package no longer contains or exposes the scaffold required by command discovery and bootstrap.
 
-**Independent Test**: Complete planning for a feature and run `/implement` to verify handoff and artifact loading
+**Independent Test**: Run the package-focused verification suite and confirm it fails when any required bundled scaffold path is removed.
+
+### Tests for User Story 3
+
+- [ ] T017 [P] [US3] Add a packaging verification test that asserts the publishable scaffold contains command markdown, `.specify` assets, and `AGENTS.md`
+- [ ] T018 [P] [US3] Add a regression test that fails when command discovery is attempted against a package-shaped install missing a required bundled command file
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] Add handoff configuration to `implement.md` for default agent
-- [ ] T016 [US3] Add tasks.md validation step to `implement.md`
-- [ ] T017 [US3] Add loading of `research.md` for technical decision context
-- [ ] T018 [US3] Add loading of `quickstart.md` for usage pattern context
-- [ ] T019 [US3] Add loading of `data-model.md` for entity context (conditional - if exists)
-- [ ] T020 [US3] Add loading of `plan.md` for implementation plan context
-- [ ] T021 [US3] Reference `/speckit.implement` logic for task execution flow
-- [ ] T022 [US3] Add error handling for missing feature workspace
-- [ ] T023 [US3] Add completion status reporting
+- [ ] T019 [US3] Add or update package/build verification hooks so maintainers can validate the bundled scaffold before release
+- [ ] T020 [US3] Document the release-time expectation for refreshing or validating the bundled scaffold in the relevant maintainer-facing docs if the workflow requires a sync step
 
-**Checkpoint**: `/implement` command is complete and ready for testing
+**Checkpoint**: Packaging regressions are caught by automated verification before publish.
 
 ---
 
-## Phase 5: User Story 4 - Spec Driven Warning (Priority: P1)
+## Phase 5: Polish & Cross-Cutting Verification
 
-**Goal**: Spec Driven agent detects uninitialized repos and shows clear warning
-
-**Independent Test**: Use Spec Driven in a fresh repository and verify warning message appears
-
-### Tests for User Story 4
-
-- [X] T024 [P] [US4] Add test case: initialized repo returns normal prompt in `tests/unit/plugin/spec-driven-agent.test.ts`
-- [X] T025 [P] [US4] Add test case: uninitialized repo returns warning prompt
-
-### Implementation for User Story 4
-
-- [X] T026 [US4] Modify `buildSpecDrivenPrompt()` in `.opencode/src/plugin/spec-driven-agent.ts`
-- [X] T027 [US4] Add early return for `repoInitialized === false`
-- [X] T028 [US4] Add warning message structure with clear instructions
-- [X] T029 [US4] Add instruction to run `/sdd-init` first
-- [X] T030 [US4] Add instruction to switch to default agent and back
-
-**Checkpoint**: Spec Driven agent shows proper warning for uninitialized repos
-
----
-
-## Phase 6: Integration & Polish
-
-**Purpose**: Cross-cutting concerns and verification
-
-- [ ] T031 Verify `/sdd-init` creates all 7 required directories/files
-- [ ] T032 [P] Verify `/implement` handoff works with existing tasks.md
-- [ ] T033 [P] Verify `/implement` loads all planning artifacts (research.md, quickstart.md, data-model.md)
-- [ ] T034 [P] Run all unit tests: `cd .opencode && bun test`
-- [ ] T035 Update AGENTS.md with new commands documentation
-- [ ] T036 Run typecheck: `cd .opencode && bunx tsc --noEmit`
+- [ ] T021 Run typecheck for `.opencode/`
+- [ ] T022 Run the full `.opencode/` test suite
+- [ ] T023 Run the package/bootstrap-focused verification commands from `quickstart.md`
+- [ ] T024 Confirm the final packaged flow covers `/sdd-init`, `/sdd`, `/implement`, and supported `speckit.*` commands end to end
 
 ---
 
@@ -157,30 +104,23 @@
 
 ### Phase Dependencies
 
-- **Phase 0 (Command Registration)**: **BLOCKER** - Must complete before any other phase
-- **Phase 1 (Setup)**: Depends on Phase 0 - command files exist but need registration to work
-- **Phase 2 (User Story 1)**: Depends on Phase 0 and Phase 1
-- **Phase 3 (User Story 2)**: No implementation tasks - verification only
-- **Phase 4 (User Story 3)**: Depends on Phase 0 and Phase 1
-- **Phase 5 (User Story 4)**: No dependencies on other phases - can run in parallel after Phase 0
-- **Phase 6 (Polish)**: Depends on all previous phases completion
+- **Phase 1**: No dependencies; it establishes the publishable asset source used everywhere else
+- **Phase 2**: Depends on Phase 1 because command registration fallback needs the bundled scaffold
+- **Phase 3**: Depends on Phase 1 and shares the same bundled scaffold source for bootstrap/init
+- **Phase 4**: Depends on Phases 1-3 so tests can validate the final package/install behavior
+- **Phase 5**: Depends on all previous phases
 
 ### Parallel Opportunities
 
-- T000a and T000b must run sequentially (T000b depends on T000a)
-- T001 and T002 can run in parallel (different files) - but only after Phase 0
-- T011-T014 can run in parallel (verification tasks)
-- T024 and T025 can run in parallel (different test cases)
-- T032, T033, T034 can run in parallel (different verification)
+- T002 and T003 can run in parallel once the bundle directory exists
+- T005 and T006 can run in parallel
+- T010, T011, and T012 can run in parallel
+- T017 and T018 can run in parallel
 
 ---
 
 ## Notes
 
-- **Phase 0 is a CRITICAL BLOCKER**: Commands will not appear in OpenCode without registration
-- All command files use existing OpenCode handoff mechanism
-- TypeScript changes follow strict mode conventions
-- Tests verify both positive and negative cases
-- Commands are additive - no breaking changes to existing functionality
-- Planning artifacts (research.md, data-model.md, quickstart.md) are created by existing `/sdd` workflow
-- `/implement` loads these artifacts automatically as context for implementation
+- The key architectural change is making the managed scaffold publishable from within the `.opencode/` package boundary
+- Repo-local scaffold remains the steady-state source after bootstrap, but packaged fallback is required for first-install discovery
+- Non-destructive merge behavior is a hard requirement and must not regress while fixing packaging

@@ -117,13 +117,19 @@ handoffs:
       rmSync(testRoot, { recursive: true, force: true });
     });
 
-    it("returns empty map when command directory does not exist", () => {
-      const nonExistentPath = path.join(tmpdir(), "non-existent-dir-" + Date.now());
-      rmSync(nonExistentPath, { recursive: true, force: true });
+    it("falls back to bundled commands when repo-local command directory is absent", () => {
+      const testRoot = path.join(tmpdir(), "sdd-bundle-fallback-" + Date.now());
+      rmSync(testRoot, { recursive: true, force: true });
+      mkdirSync(testRoot, { recursive: true });
 
-      const commands = discoverCommands(nonExistentPath);
+      const commands = discoverCommands(testRoot);
 
-      expect(commands.size).toBe(0);
+      expect(commands.size).toBeGreaterThan(0);
+      expect(commands.has("sdd")).toBe(true);
+      expect(commands.has("sdd-init")).toBe(true);
+      expect(commands.has("implement")).toBe(true);
+
+      rmSync(testRoot, { recursive: true, force: true });
     });
 
     it("sets template path correctly", () => {

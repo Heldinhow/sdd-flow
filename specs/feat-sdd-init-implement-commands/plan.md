@@ -1,204 +1,114 @@
-# Implementation Plan: SDD Init and Implement Commands
+# Implementation Plan: Package and Bootstrap the SDD Command Scaffold
 
 **Branch**: `feat-sdd-init-implement-commands` | **Date**: 2026-03-21 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/feat-sdd-init-implement-commands/spec.md`
 
 ## Summary
 
-Add two new OpenCode commands (`/sdd-init`, `/implement`) and update the Spec Driven agent to detect uninitialized repositories. This enables a complete SDD workflow: initialization → planning → implementation, with clear agent handoffs at each stage.
+Fix the normal-install experience for `@helldinhow/sdd-flow-opencode-plugin` by shipping a publishable managed-asset bundle inside the package, using that bundle as the bootstrap/init source of truth, and registering commands from bundled assets when a consumer repo has not yet materialized its local scaffold.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 5.8 with strict mode  
-**Primary Dependencies**: `@opencode-ai/plugin` 1.2.27, Bun runtime (Node 22 compatible)  
-**Storage**: Filesystem (markdown files, shell scripts)  
+**Primary Dependencies**: `@opencode-ai/plugin` 1.2.27, `@opencode-ai/sdk` 1.2.27, Bun runtime  
+**Storage**: Filesystem-managed scaffold assets bundled in the npm package and copied into consumer repositories  
 **Testing**: Bun's built-in `bun:test`  
-**Target Platform**: OpenCode plugin system  
-**Project Type**: OpenCode plugin with command files  
-**Performance Goals**: N/A (commands are triggered by user action)  
-**Constraints**: Must integrate with existing OpenCode handoff mechanism  
-**Scale/Scope**: 2 new command files, 1 agent file update
+**Target Platform**: OpenCode plugin system, normal npm package installation flow  
+**Project Type**: Publishable OpenCode plugin package with managed repo scaffold  
+**Performance Goals**: Command discovery and bootstrap should stay file-system bound with negligible startup overhead for the small asset bundle  
+**Constraints**: The publishable package boundary is `.opencode/`, so sibling repo assets like `.specify/*` and root `AGENTS.md` must be mirrored into a package-local bundle before release/runtime use  
+**Scale/Scope**: Package manifest updates, asset-bundle source resolution, bootstrap wiring, command registration fallback, and packaging/bootstrap regression tests
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- ✅ AGENTS.md exists with development guidelines
-- ✅ Using established patterns from existing commands (`sdd.md`, `speckit.implement.md`)
-- ✅ TypeScript conventions followed (strict mode, file extensions, naming)
-- ✅ Plugin architecture respected (command files with YAML frontmatter)
+- ✅ AGENTS.md exists with current development guidance
+- ✅ Change stays within the existing Bun + TypeScript plugin stack
+- ✅ Behavior remains non-destructive for repo-local managed assets
+- ✅ Plan preserves the existing guided SDD architecture instead of introducing a second workflow
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `.opencode/command/sdd-init.md` | **CREATE** - New initialization command with handoff to default agent |
-| `.opencode/command/implement.md` | **CREATE** - New implementation command with handoff to default agent |
-| `.opencode/src/plugin/command-registry.ts` | **CREATE** - Module to discover and register commands with OpenCode |
-| `.opencode/src/plugin/index.ts` | **MODIFY** - Call `registerCommands()` in config hook |
-| `.opencode/src/plugin/spec-driven-agent.ts` | **MODIFY** - Add uninitialized repo detection and warning |
+| `.opencode/package.json` | **MODIFY** - Publish the bundled scaffold assets and any packaging/bootstrap script support |
+| `.opencode/src/init/managed-assets.ts` | **MODIFY** - Resolve managed assets from a package-local bundled source instead of assuming repo-root siblings |
+| `.opencode/src/init/run-init.ts` | **MODIFY** - Copy missing assets from the packaged bundle into the consumer repo |
+| `.opencode/src/plugin/command-registry.ts` | **MODIFY** - Register commands from bundled assets when repo-local command markdown is absent |
+| `.opencode/src/plugin/index.ts` | **MODIFY** - Wire bootstrap-aware command registration and any startup scaffold sync needed before discovery |
+| `.opencode/scripts/install-skill.js` or a replacement bootstrap script | **MODIFY/REPLACE** - Expand install/bootstrap behavior if runtime bootstrap needs a package-side helper |
+| `.opencode/tests/unit/init/repo-init.test.ts` | **MODIFY** - Cover bundled asset manifest resolution and non-destructive bootstrap from package assets |
+| `.opencode/tests/unit/plugin/command-registry.test.ts` | **MODIFY** - Cover command registration from the packaged scaffold when the consumer repo is empty |
+| `.opencode/tests/integration/...` | **CREATE/MODIFY** - Add package-shaped install/bootstrap regression coverage if unit tests alone are insufficient |
+| `.opencode/<package-local-bundle>/**` | **CREATE** - Store publishable copies of `.opencode/command`, `.specify`, and `AGENTS.md` inside the package boundary |
 
 ## File Details
 
-### 1. `.opencode/command/sdd-init.md`
+### 1. Package-local bundled scaffold
 
-**Purpose**: Initialize SDD workflow in a repository
+**Purpose**: Make every managed repo asset publishable from the `.opencode/` package boundary.
 
-**Handoff**: Switches to `default` agent for file system operations
+**Planned shape**:
 
-**Key Sections**:
-```yaml
----
-description: Initialize SDD workflow in a repository — creates all required directories, files, and constitution interactively. Must be run before Spec Driven agent can be used.
-handoffs:
-  - label: Initialize Repository
-    agent: default
-    prompt: |
-      Initialize SDD workflow in this repository. Follow this checklist strictly:
-      [Full checklist with 6 phases - see design]
----
+```text
+.opencode/
+├── managed-assets/
+│   ├── .opencode/
+│   │   └── command/
+│   ├── .specify/
+│   │   ├── scripts/bash/
+│   │   └── templates/
+│   └── AGENTS.md
 ```
 
-**Checklist Phases**:
-1. Directory Structure (`.specify/`, `.opencode/`, `specs/`)
-2. Template Files (constitution, spec, plan, tasks, checklist, agent-file templates)
-3. Shell Scripts (check-prerequisites, common, create-new-feature, setup-plan, update-agent-context)
-4. OpenCode Integration (AGENTS.md, command files, plugin entrypoint)
-5. Constitution Creation (interactive prompting)
-6. Verification (all directories/files exist, no placeholders)
+**Decision**: Use a package-local mirrored bundle instead of relying on repo siblings, because npm publication from `.opencode/package.json` cannot safely include `../.specify` or `../AGENTS.md`.
 
-### 2. `.opencode/command/implement.md`
+### 2. `.opencode/package.json`
 
-**Purpose**: Execute implementation plan by processing tasks from tasks.md
+**Purpose**: Publish the bundle and protect it from being omitted again.
 
-**Handoff**: Switches to `default` agent for code execution
+**Changes**:
+- Add the bundled scaffold directory to `files`
+- Keep the plugin entrypoint export unchanged
+- If needed, replace the narrow `postinstall` behavior with a bootstrap-oriented script contract that does more than install one skill
 
-**Key Sections**:
-```yaml
----
-description: Execute implementation plan by processing and executing all tasks defined in tasks.md. Switches to default agent for code execution.
-handoffs:
-  - label: Implement Tasks
-    agent: default
-    prompt: |
-      Execute the implementation plan for this feature workspace.
-      Follow the implementation flow from /speckit.implement...
----
-```
+### 3. `.opencode/src/init/managed-assets.ts`
 
-**Behavior**:
-- Validates `tasks.md` exists in active feature workspace
-- Loads implementation context from planning artifacts:
-  - `tasks.md` - Task breakdown
-  - `plan.md` - Technical implementation plan
-  - `research.md` - Technical decisions and findings
-  - `data-model.md` - Entity definitions (if exists)
-  - `quickstart.md` - Usage patterns and examples
-- Delegates to `/speckit.implement` logic
-- Marks completed tasks with `[X]`
-- Reports completion status
+**Purpose**: Treat the bundled scaffold as the canonical source of truth.
 
-### 3. `.opencode/src/plugin/spec-driven-agent.ts`
-
-**Purpose**: Add uninitialized repository detection
-
-**Change**: Update `buildSpecDrivenPrompt()` function
-
-**Before** (current):
-```typescript
-function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
-  const stateLine = input.repoInitialized
-    ? `The repository already has SDD workflow assets at ${input.projectRoot}...`
-    : `The repository at ${input.projectRoot} is not initialized for SDD yet...`;
-  // ... build prompt
-}
-```
-
-**After** (new):
-```typescript
-function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
-  if (!input.repoInitialized) {
-    return [
-      "You are Spec Driven, the primary Spec-Driven Development agent for OpenCode.",
-      "",
-      "## Repository Not Initialized",
-      "",
-      `The repository at ${input.projectRoot} is not initialized for SDD workflow.`,
-      "",
-      "**You cannot proceed with planning until initialization is complete.**",
-      "",
-      "## Required Action",
-      "",
-      "Instruct the user to:",
-      "1. Switch to the default agent (not Spec Driven)",
-      "2. Run `/sdd-init` to initialize the repository",
-      "3. After initialization completes, switch back to Spec Driven",
-      "4. Then the planning workflow can begin",
-    ].join("\n");
-  }
-
-  // ... existing initialized prompt
-}
-```
+**Changes**:
+- Point `MANAGED_ASSET_ROOT` at the package-local bundle
+- Keep the emitted `relativePath` values repo-relative (for example `.opencode/command/sdd.md`)
+- Preserve asset grouping behavior used by init/merge logic
 
 ### 4. `.opencode/src/plugin/command-registry.ts`
 
-**Purpose**: Discover and register all commands with OpenCode
+**Purpose**: Decouple command discovery from the presence of pre-existing repo-local command files.
 
-**Why**: OpenCode requires explicit command registration via `config.command`. Command files in `.opencode/command/` are NOT auto-discovered.
-
-**Exports**:
-- `parseYamlFrontmatter(content: string)` - Parse YAML frontmatter from command .md files
-- `discoverCommands(projectRoot: string)` - Find all .md files in `.opencode/command/`
-- `registerCommands(config: Config, projectRoot: string)` - Add commands to `config.command`
-
-**Key Logic**:
-```typescript
-interface CommandEntry {
-  template: string;
-  description?: string;
-  agent?: string;
-}
-
-function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
-  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  // Extract description and handoffs[].agent
-}
-
-function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
-  const commandsDir = path.join(projectRoot, ".opencode", "command");
-  // Read all .md files, parse frontmatter, return entries
-}
-
-function registerCommands(config: Config, projectRoot: string): void {
-  const commands = discoverCommands(projectRoot);
-  config.command ??= {};
-  for (const [name, entry] of commands) {
-    config.command[name] = {
-      template: entry.template,
-      description: entry.description,
-      agent: entry.agent,
-    };
-  }
-}
-```
+**Changes**:
+- Resolve command templates from repo-local scaffold first when present
+- Fall back to the packaged command bundle when the consumer repo is empty or incomplete
+- Keep command descriptions and handoff metadata sourced from the same markdown templates that will later be materialized into the repo
 
 ### 5. `.opencode/src/plugin/index.ts`
 
-**Purpose**: Call `registerCommands()` in config hook
+**Purpose**: Ensure command discovery works during the first normal install experience.
 
-**Change**: Add import and function call
+**Changes**:
+- Wire the command registry against the bootstrap-aware source resolver
+- If required, run a non-destructive startup sync for missing `.opencode/command` files before command registration
+- Preserve current Spec Driven agent behavior and repo initialization checks
 
-```typescript
-// Add import
-import { registerCommands } from "./command-registry";
+### 6. Tests
 
-// In config hook
-async config(config) {
-  registerSpecDrivenAgent(config, buildSpecDrivenPrompt({...}));
-  registerCommands(config, projectRoot); // NEW LINE
-}
-```
+**Purpose**: Block regressions at the package boundary.
+
+**Coverage targets**:
+- Bundled asset manifest contains command markdown, `.specify` scripts/templates, and `AGENTS.md`
+- Bootstrap/init copies missing assets from the bundle without overwriting customized local files
+- Command registration works against a package-shaped install where the consumer repo starts empty
+- Packaging verification fails when the bundle omits any required scaffold path
 
 ## Project Structure
 
@@ -206,117 +116,89 @@ async config(config) {
 
 ```text
 specs/feat-sdd-init-implement-commands/
-├── spec.md              # Feature specification
-├── plan.md              # This file
-├── research.md          # Research decisions and technical findings
-├── data-model.md        # Data model (N/A - no data entities)
-├── quickstart.md        # Usage guide for new commands
-└── tasks.md             # Task breakdown for implementation
+├── spec.md
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+└── tasks.md
 ```
 
 ### Source Code (repository root)
 
 ```text
 .opencode/
-├── command/
-│   ├── sdd.md              # EXISTING - Main SDD workflow command
-│   ├── sdd-init.md         # NEW - Initialization command
-│   ├── implement.md        # NEW - Implementation command
-│   └── speckit.*.md        # EXISTING - Compatibility wrappers
+├── package.json
+├── managed-assets/               # NEW publishable scaffold bundle
+├── command/                      # Existing authoring source for command markdown
+├── scripts/
+│   └── install-skill.js
 ├── src/
+│   ├── init/
+│   │   ├── managed-assets.ts
+│   │   └── run-init.ts
 │   └── plugin/
-│       ├── index.ts                    # EXISTING - Plugin entrypoint
-│       └── spec-driven-agent.ts        # MODIFY - Add init detection
+│       ├── command-registry.ts
+│       └── index.ts
 └── tests/
+    ├── integration/
     └── unit/
-        └── plugin/
-            └── spec-driven-agent.test.ts  # UPDATE - Add tests for init detection
-
-.specify/
-├── scripts/bash/           # unchanged
-├── templates/              # unchanged
-└── memory/constitution.md  # unchanged
+        ├── init/repo-init.test.ts
+        └── plugin/command-registry.test.ts
 ```
 
-**Structure Decision**: Changes are isolated to `.opencode/` directory. No changes to `.specify/` or other project files.
+**Structure Decision**: Keep the package rooted at `.opencode/`, but introduce a mirrored bundle directory inside that boundary so npm publication and runtime bootstrap can both rely on files that actually ship in the package.
 
 ## Complexity Tracking
 
-> No constitution violations. All changes follow established patterns.
+> No constitution violations. The added complexity is limited to making the package boundary explicit and testable.
 
 | Aspect | Status |
 |--------|--------|
-| New commands follow existing patterns | ✅ Aligned with `sdd.md`, `speckit.implement.md` |
-| Agent handoff mechanism | ✅ Uses existing `handoffs` YAML frontmatter |
-| TypeScript conventions | ✅ Strict mode, proper typing |
+| Package boundary explicitly modeled | ✅ Required to publish `.specify` and `AGENTS.md` safely |
+| Repo-local bootstrap remains non-destructive | ✅ Preserves current merge semantics |
+| Command discovery no longer depends on pre-existing consumer scaffold | ✅ Fixes first-install failure mode |
 
 ## Implementation Phases
 
-### Phase 1: Create `/sdd-init` Command
+### Phase 1: Bundle the managed scaffold inside the package
 
-**Files**: `.opencode/command/sdd-init.md`
+**Outcome**: Every repo-init asset needed by the workflow exists inside the publishable `.opencode/` boundary.
 
-**Steps**:
-1. Create command file with YAML frontmatter
-2. Add handoff configuration to default agent
-3. Write initialization checklist (6 phases)
-4. Add constitution creation flow
-5. Add verification step
-6. Add user instructions to return to Spec Driven
+### Phase 2: Make bootstrap/init consume the bundle
 
-### Phase 2: Create `/implement` Command
+**Outcome**: `runInit` and manifest generation copy from bundled assets instead of repo-root sibling files.
 
-**Files**: `.opencode/command/implement.md`
+### Phase 3: Make command discovery work before local scaffold exists
 
-**Steps**:
-1. Create command file with YAML frontmatter
-2. Add handoff configuration to default agent
-3. Add tasks.md validation
-4. Reference `/speckit.implement` logic
-5. Add completion reporting
+**Outcome**: `/sdd-init`, `/sdd`, `/implement`, and `speckit.*` register from bundled assets on first install, while repo-local scaffold remains the long-term source after bootstrap.
 
-### Phase 3: Update Spec Driven Agent
+### Phase 4: Add packaging/bootstrap regression coverage
 
-**Files**: `.opencode/src/plugin/spec-driven-agent.ts`
-
-**Steps**:
-1. Modify `buildSpecDrivenPrompt()` function
-2. Add early return for uninitialized repos
-3. Add clear warning message
-4. Add user instructions
-5. Update tests
-
-### Phase 4: Testing
-
-**Files**: `.opencode/tests/unit/plugin/spec-driven-agent.test.ts`
-
-**Test Cases**:
-1. Initialized repo returns normal prompt
-2. Uninitialized repo returns warning prompt
-3. Warning contains `/sdd-init` instruction
-4. Warning instructs user to switch agents
+**Outcome**: Release-time tests fail if the package no longer contains or exposes the scaffold correctly.
 
 ## Dependencies
 
-None - all changes are additive and follow existing patterns.
+- Phase 1 is foundational; later phases depend on the bundle existing inside the package
+- Phase 2 depends on Phase 1 because bootstrap/init must read from the new bundled source
+- Phase 3 depends on Phase 1 and may share source-resolution helpers with Phase 2
+- Phase 4 depends on all earlier phases so it can exercise the final publish/install behavior
 
 ## Risk Assessment
 
 | Risk | Mitigation |
 |------|------------|
-| User runs `/sdd-init` in initialized repo | Non-destructive merge preserves existing files |
-| `/implement` called without tasks.md | Clear error message with guidance |
-| Agent handoff fails | OpenCode handles handoff gracefully |
+| Bundle diverges from authoring sources | Generate or mirror the bundle from a single canonical source and cover it with tests |
+| Startup bootstrap becomes destructive | Reuse existing merge plan semantics and keep differing files in review state |
+| Commands register from the wrong source | Prefer repo-local scaffold when present, packaged fallback only when needed |
+| Package fix only covers commands, not init assets | Explicitly test `.specify` and `AGENTS.md` coverage in the packaged bundle |
 
 ## Verification Checklist
 
-- [ ] `/sdd-init` creates all required directories
-- [ ] `/sdd-init` creates all required files
-- [ ] `/sdd-init` collects constitution values interactively
-- [ ] `/sdd-init` writes constitution with no placeholders
-- [ ] `/sdd-init` instructs user to return to Spec Driven
-- [ ] `/implement` validates tasks.md existence
-- [ ] `/implement` hands off to default agent
-- [ ] Spec Driven shows warning for uninitialized repos
-- [ ] Spec Driven proceeds normally for initialized repos
-- [ ] All tests pass
+- [ ] Packaged bundle contains the full SDD command scaffold
+- [ ] Packaged bundle contains required `.specify` scripts/templates and `AGENTS.md`
+- [ ] `runInit` copies missing assets from the bundled source
+- [ ] Existing customized managed files are preserved for review
+- [ ] Command registration works when the consumer repo starts without `.opencode/command/`
+- [ ] `/sdd-init`, `/sdd`, `/implement`, and supported `speckit.*` commands appear in the first-install flow
+- [ ] Packaging/bootstrap regression tests fail when a required bundled asset is removed

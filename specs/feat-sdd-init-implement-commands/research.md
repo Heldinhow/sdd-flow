@@ -1,115 +1,78 @@
-# Research: SDD Init and Implement Commands
+# Research: Package and Bootstrap the SDD Command Scaffold
 
 **Feature Branch**: `feat-sdd-init-implement-commands`
 **Date**: 2026-03-21
 
 ## Research Questions
 
-### Q1: How does the OpenCode handoff mechanism work?
+### Q1: What is the current publish-time root cause?
 
-**Finding**: OpenCode uses YAML frontmatter in command files with a `handoffs` key that specifies:
-- `label`: Human-readable name for the handoff
-- `agent`: Target agent (e.g., `default`, `speckit.tasks`)
-- `prompt`: Context passed to the target agent
+**Finding**: `.opencode/package.json` publishes only `plugin/**/*.ts`, `src/**/*.ts`, `skills/**/*.md`, and `scripts/**/*.js`. It does not publish the command markdown scaffold, and it cannot directly publish sibling repo assets like `.specify/*` or root `AGENTS.md` because the package root is `.opencode/`.
 
-**Evidence**: Examined `.opencode/command/sdd.md`:
-```yaml
-handoffs:
-  - label: Run Task Generation
-    agent: speckit.tasks
-    prompt: Generate task breakdown...
-```
+**Evidence**:
+- `.opencode/package.json` `files` list omits `command/**/*.md`
+- `.opencode/package.json` is itself inside `.opencode/`, so repo siblings are outside the package boundary
 
-**Decision**: Use the same handoff pattern for `/sdd-init` and `/implement` commands, targeting `default` agent for full permissions.
+**Decision**: Introduce a package-local managed-asset bundle inside `.opencode/` and publish that bundle explicitly.
 
 ---
 
-### Q2: How does the existing `/sdd init` flow work?
+### Q2: Why is command registration alone not enough?
 
-**Finding**: The `/sdd` command has an initialization flow embedded in Step 3 of `sdd.md`:
-- Detects if `.opencode/` and `.specify/` exist
-- Uses non-destructive merge strategy
-- Calls `check-prerequisites.sh --json --paths-only`
-- Preserves user customizations
+**Finding**: `registerCommands(config, projectRoot)` currently discovers commands only from `projectRoot/.opencode/command`. If the consumer repo has never been bootstrapped, discovery returns nothing even though the plugin loaded correctly.
 
-**Evidence**: Lines 87-104 in `sdd.md`:
-```markdown
-### Step 3: Repository Initialization Flow (when needed)
+**Evidence**:
+- `.opencode/src/plugin/index.ts` calls `registerCommands(config, projectRoot)`
+- `.opencode/src/plugin/command-registry.ts` reads only `path.join(projectRoot, ".opencode", "command")`
 
-When the user invokes `/sdd init` or the system detects uninitialized repository state:
-1. Detect current state
-2. Plan the merge
-3. Execute the merge
-4. Report
-5. Recommend next step
-```
-
-**Decision**: `/sdd-init` should follow the same pattern but as a standalone command with explicit checklist.
+**Decision**: Add a packaged-asset fallback so the plugin can register commands before repo-local scaffold exists.
 
 ---
 
-### Q3: How does `/speckit.constitution` create constitution interactively?
+### Q3: What does repo init already do well that should be preserved?
 
-**Finding**: The constitution command (`.opencode/command/speckit.constitution.md`):
-1. Loads `.specify/templates/constitution-template.md`
-2. Identifies placeholder tokens like `[PROJECT_NAME]`, `[PRINCIPLE_X_NAME]`
-3. Collects values from user or infers from repo context
-4. Fills all placeholders
-5. Writes to `.specify/memory/constitution.md`
+**Finding**: `runInit()` already builds a manifest, computes a merge plan, adds only missing files, and preserves customized files by marking them for review.
 
-**Evidence**: Lines 18-84 in `speckit.constitution.md` outline the full flow.
+**Evidence**:
+- `.opencode/src/init/run-init.ts` copies only `MERGE_ACTION.ADD` assets
+- `.opencode/src/init/merge-managed-assets.ts` returns `REVIEW` when source and target contents differ
 
-**Decision**: `/sdd-init` should embed the same interactive constitution creation as Phase 5 of its checklist.
+**Decision**: Keep the existing non-destructive merge semantics and only change the managed asset source.
 
 ---
 
-### Q4: How does `/speckit.implement` execute tasks?
+### Q4: What is missing from the current managed asset source model?
 
-**Finding**: The implement command (`.opencode/command/speckit.implement.md`):
-1. Runs `check-prerequisites.sh --json --require-tasks --include-tasks`
-2. Validates tasks.md exists
-3. Checks checklists status
-4. Loads implementation context (tasks, plan, data-model, contracts, research, quickstart)
-5. Executes tasks phase by phase
-6. Marks completed tasks with `[X]`
+**Finding**: `buildManagedAssetManifest(sourceRoot)` assumes the source root contains repo-local paths like `.opencode/command`, `.specify/templates`, and `AGENTS.md`. That works in this repository, but not in a published package rooted at `.opencode/` unless those assets are mirrored into a package-local bundle.
 
-**Evidence**: Lines 49-198 in `speckit.implement.md`.
+**Evidence**:
+- `.opencode/src/init/managed-assets.ts` enumerates `.opencode/command`, `.specify/scripts/bash`, `.specify/templates`, and `AGENTS.md`
 
-**Decision**: `/implement` should delegate to the same logic with agent handoff.
+**Decision**: Make the bundle the canonical runtime source and keep emitted `relativePath` values repo-relative.
 
 ---
 
-### Q5: How does Spec Driven agent detect repo state?
+### Q5: Should bootstrap rely on `postinstall` alone?
 
-**Finding**: The plugin (`.opencode/src/plugin/index.ts`) uses:
-```typescript
-function hasSddMarkers(directory: string): boolean {
-  return existsSync(path.join(directory, ".specify")) && 
-         existsSync(path.join(directory, "specs"));
-}
-```
+**Finding**: The current `postinstall` script only copies the `sdd-artifact-guard` skill into the user's home directory. It does not materialize repo-local scaffold assets or help command discovery in the consumer repo.
 
-**Evidence**: Lines 14-16 in `index.ts`.
+**Evidence**:
+- `.opencode/package.json` runs `node scripts/install-skill.js`
+- `.opencode/scripts/install-skill.js` installs a skill but does not inspect or modify the active project repo
 
-**Decision**: Use the same detection in `buildSpecDrivenPrompt()` to show warning for uninitialized repos.
+**Decision**: Do not depend on the current `postinstall` behavior for repo bootstrap. The runtime/plugin layer must handle first-install command discovery, and the init backend must handle repo-local scaffold materialization.
 
 ---
 
-### Q6: What files does speckit create in a feature workspace?
+### Q6: What release guard was missing?
 
-**Finding**: The `.opencode/command/speckit.plan.md` creates:
-- `plan.md` - Implementation plan
-- `research.md` - Research decisions
-- `data-model.md` - Data models (if applicable)
-- `quickstart.md` - Quickstart guide
-- `contracts/` - API contracts (if applicable)
+**Finding**: Existing tests cover repo init merge behavior and command registration behavior, but they do not validate the package boundary or a package-shaped installation where repo-local scaffold is initially absent.
 
-**Evidence**: Line 131 in `sdd.md`:
-```markdown
-Generate plan.md, research.md, data-model.md, quickstart.md, and any relevant markdown contracts
-```
+**Evidence**:
+- `.opencode/tests/unit/init/repo-init.test.ts` validates merge behavior against this repo root
+- `.opencode/tests/unit/plugin/command-registry.test.ts` exists, but packaging failure still escaped
 
-**Decision**: For this feature, research.md is needed. data-model.md is NOT applicable (no data models involved).
+**Decision**: Add coverage that exercises package-shaped asset resolution and empty-consumer-repo command registration.
 
 ---
 
@@ -117,34 +80,30 @@ Generate plan.md, research.md, data-model.md, quickstart.md, and any relevant ma
 
 | Decision | Rationale |
 |----------|-----------|
-| Use `default` agent handoff | Full permissions for file creation and code execution |
-| Use existing detection logic | `hasSddMarkers()` already works correctly |
-| Embed constitution flow | Reuse proven `/speckit.constitution` logic |
-| Delegate to `/speckit.implement` | Proven task execution logic |
-| Create `research.md` | Document research decisions |
-| Skip `data-model.md` | No data entities in this feature |
-| Load all artifacts in `/implement` | Uses research.md, quickstart.md, data-model.md as context |
-| Auto-create artifacts in `/sdd` | Already implemented - just needs integration verification |
-
----
+| Bundle managed assets inside `.opencode/` | npm publication cannot rely on sibling repo files outside the package root |
+| Keep repo-local relative paths in the manifest | Init/merge logic already expects target paths like `.opencode/command/...` and `.specify/...` |
+| Register commands from repo-local scaffold first, packaged bundle second | Preserves local customization while fixing the first-install experience |
+| Preserve existing non-destructive merge semantics | Current merge behavior already protects customized consumer files |
+| Add package-boundary regression tests | Prevents runtime fixes from shipping without the scaffold assets they depend on |
 
 ## Risks Identified
 
-1. **Risk**: User runs `/sdd-init` twice
-   - **Mitigation**: Non-destructive merge preserves existing files
+1. **Risk**: The bundle becomes stale relative to the authoring sources  
+   **Mitigation**: Make the bundle generation/update path explicit and cover required file presence in tests
 
-2. **Risk**: `/implement` called without planning
-   - **Mitigation**: Clear error message with guidance
+2. **Risk**: A packaged fallback registers commands that differ from later repo-local copies  
+   **Mitigation**: Source both from the same bundled markdown templates and keep repo-local copies aligned with the bundle
 
-3. **Risk**: Agent handoff fails
-   - **Mitigation**: OpenCode handles gracefully, user sees command in history
-
----
+3. **Risk**: The fix patches only `.opencode/command` and misses `.specify` or `AGENTS.md`  
+   **Mitigation**: Treat the full managed scaffold as the package contract, not just the command directory
 
 ## References
 
-- `.opencode/command/sdd.md` - Main SDD workflow
-- `.opencode/command/speckit.constitution.md` - Constitution creation
-- `.opencode/command/speckit.implement.md` - Task execution
-- `.opencode/src/plugin/spec-driven-agent.ts` - Agent configuration
-- `.opencode/src/plugin/index.ts` - Plugin entrypoint and detection logic
+- `.opencode/package.json`
+- `.opencode/src/plugin/index.ts`
+- `.opencode/src/plugin/command-registry.ts`
+- `.opencode/src/init/managed-assets.ts`
+- `.opencode/src/init/run-init.ts`
+- `.opencode/src/init/merge-managed-assets.ts`
+- `.opencode/scripts/install-skill.js`
+- `.opencode/tests/unit/init/repo-init.test.ts`

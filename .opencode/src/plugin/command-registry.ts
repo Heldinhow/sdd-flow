@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Config } from "@opencode-ai/sdk";
 
@@ -19,6 +20,19 @@ interface CommandEntry {
 }
 
 const COMMANDS_DIR = [".opencode", "command"] as const;
+const BUNDLE_COMMANDS_PATH = ["managed-assets", ".opencode", "command"] as const;
+
+function resolvePackageRoot(): string {
+  return path.resolve(fileURLToPath(import.meta.url), "..", "..", "..");
+}
+
+function resolveCommandsDir(projectRoot: string): string {
+  return path.join(projectRoot, ...COMMANDS_DIR);
+}
+
+function resolveBundleCommandsDir(): string {
+  return path.join(resolvePackageRoot(), ...BUNDLE_COMMANDS_PATH);
+}
 
 function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
   const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -77,8 +91,13 @@ function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
 }
 
 function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
-  const commandsDir = path.join(projectRoot, ...COMMANDS_DIR);
+  const repoLocalCommandsDir = resolveCommandsDir(projectRoot);
   const commands = new Map<string, CommandEntry>();
+
+  const commandsDir =
+    existsSync(repoLocalCommandsDir)
+      ? repoLocalCommandsDir
+      : resolveBundleCommandsDir();
 
   if (!existsSync(commandsDir)) {
     return commands;
@@ -128,5 +147,5 @@ function registerCommands(config: Config, projectRoot: string): void {
   }
 }
 
-export { discoverCommands, parseYamlFrontmatter, registerCommands };
+export { discoverCommands, parseYamlFrontmatter, registerCommands, resolvePackageRoot };
 export type { CommandEntry, CommandFrontmatter };

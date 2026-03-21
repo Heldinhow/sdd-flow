@@ -92,19 +92,51 @@ After bootstrap:
 
 ## Repository Bootstrap
 
-Managed assets currently include:
+The plugin ships a **managed assets bundle** inside the npm package at `.opencode/managed-assets/`. This bundle contains everything required for command discovery and repository bootstrap:
 
-- `.opencode/command/` with `/sdd` and `speckit.*` wrappers
-- `.opencode/plugin/`, `.opencode/plugins/`, and `.opencode/src/`
-- `.opencode/package.json`, `.opencode/bun.lock`, `.opencode/tsconfig.json`, and `.opencode/.gitignore`
-- `.specify/scripts/bash/`, `.specify/templates/`, and `.specify/memory/constitution.md`
-- `AGENTS.md`
+```
+.opencode/managed-assets/
+├── .opencode/command/     # All SDD command markdown files
+├── .specify/scripts/bash/ # Workflow shell scripts
+├── .specify/templates/    # Planning artifact templates
+├── .specify/memory/       # Constitution template
+└── AGENTS.md             # Development guidelines
+```
+
+On first install, the plugin registers commands directly from this bundled scaffold even when the consumer repository has no local `.opencode/command/` yet. The bootstrap/init flow copies missing scaffold files from the bundle into the target repository non-destructively.
 
 Bootstrap rules:
 
 - preserve existing compatible user customizations in `.opencode/` and `.specify/`
 - install or merge missing managed files non-destructively
 - keep `Spec Driven` as the primary entrypoint while `/sdd` remains the repo-local backend
+
+## Maintaining the Bundle
+
+The bundle at `.opencode/managed-assets/` must be kept in sync with the authoring sources whenever managed assets change. To refresh the bundle before publishing:
+
+```bash
+# From the sdd-flow repository root
+cp .opencode/command/*.md .opencode/managed-assets/.opencode/command/
+cp .specify/scripts/bash/*.sh .opencode/managed-assets/.specify/scripts/bash/
+cp -r .specify/templates/* .opencode/managed-assets/.specify/templates/
+cp .specify/memory/* .opencode/managed-assets/.specify/memory/
+cp AGENTS.md .opencode/managed-assets/AGENTS.md
+```
+
+Then run the packaging verification:
+
+```bash
+cd .opencode && bun test tests/unit/packaging/
+```
+
+Before publishing a new version, run the full prepublish check:
+
+```bash
+cd .opencode && bun run prepublishOnly
+```
+
+This runs typecheck and the packaging verification suite to block releases with missing or stale bundle assets.
 
 ## Local Development
 
@@ -122,6 +154,8 @@ Then:
 - select `Spec Driven`
 - the existing repo-local `.opencode/`, `.specify/`, and `specs/` assets let the workflow resume from the current planning state
 
+When contributing, keep the managed assets bundle in sync with authoring sources (see "Maintaining the Bundle" above).
+
 If OpenCode does not install dependencies automatically for this cloned development repository on first load, run this once:
 
 ```bash
@@ -130,8 +164,16 @@ cd .opencode && bun install
 
 ## Project Layout
 
-```text
+```
 .opencode/
+├── managed-assets/       # Publishable scaffold bundle (synced with authoring sources)
+├── plugin/               # Package export entry
+├── plugins/              # Local OpenCode development loader
+├── src/                  # Plugin runtime source
+├── command/              # Authoring source for command markdown
+├── scripts/              # Build and utility scripts
+├── skills/              # OpenCode skills
+└── tests/               # Test suite
 .specify/
 specs/
 AGENTS.md
@@ -143,7 +185,8 @@ Main implementation paths:
 - plugin runtime: `.opencode/src/`
 - project plugin loader: `.opencode/plugins/sdd.ts`
 - package export entrypoint: `.opencode/plugin/sdd.ts`
-- command surface: `.opencode/command/`
+- command surface: `.opencode/command/` (authoring source)
+- managed assets bundle: `.opencode/managed-assets/` (published to npm)
 - tests: `.opencode/tests/`
 - workflow backend scripts and templates: `.specify/`
 
