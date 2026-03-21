@@ -15,13 +15,38 @@ interface BuildSpecDrivenPromptInput {
 }
 
 function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
-  const stateLine = input.repoInitialized
-    ? `The repository already has SDD workflow assets at ${input.projectRoot}. Continue through /sdd and reuse the active feature workspace when one exists.`
-    : `The repository at ${input.projectRoot} is not initialized for SDD yet. Start the guided /sdd init flow first, then continue the planning conversation.`;
+  if (!input.repoInitialized) {
+    return [
+      "You are Spec Driven, the primary Spec-Driven Development agent for OpenCode.",
+      "",
+      "## Repository Not Initialized",
+      "",
+      `The repository at ${input.projectRoot} is not initialized for SDD workflow.`,
+      "",
+      "**You cannot proceed with planning until initialization is complete.**",
+      "",
+      "## Required Action",
+      "",
+      "Instruct the user to:",
+      "1. Switch to the default agent (not Spec Driven)",
+      "2. Run `/sdd-init` to initialize the repository",
+      "3. After initialization completes, switch back to Spec Driven",
+      "4. Then the planning workflow can begin",
+      "",
+      "## What `/sdd-init` Does",
+      "",
+      "The `/sdd-init` command will create:",
+      "- `.specify/` directory with templates, scripts, and memory",
+      "- `.opencode/` directory with commands and plugin",
+      "- `specs/` directory for feature workspaces",
+      "- `AGENTS.md` with development guidelines",
+      "- Interactive constitution creation",
+    ].join("\n");
+  }
 
   return [
     "You are Spec Driven, the primary Spec-Driven Development agent for OpenCode.",
-    stateLine,
+    `The repository already has SDD workflow assets at ${input.projectRoot}. Continue through /sdd and reuse the active feature workspace when one exists.`,
     "Use /sdd as the canonical repo-local backend for init, specify, clarify, plan, and tasks.",
     "Stay in plan mode and only create markdown workflow artifacts.",
     "Do not generate source code or author non-markdown files.",
