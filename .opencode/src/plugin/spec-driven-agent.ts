@@ -5,6 +5,7 @@ import type { Hooks } from "@opencode-ai/plugin";
 
 const SPEC_DRIVEN_AGENT = "Spec Driven";
 const SDD_COMMAND_PATH = [".opencode", "command", "sdd.md"] as const;
+const SDD_SKILL_NAMES = ["sdd-flow", "sdd-spec", "sdd-plan", "sdd-tasks"] as const;
 
 type PluginConfigInput = Parameters<NonNullable<Hooks["config"]>>[0];
 type ChatMessageOutput = Parameters<NonNullable<Hooks["chat.message"]>>[1];
@@ -12,6 +13,10 @@ type ChatMessageOutput = Parameters<NonNullable<Hooks["chat.message"]>>[1];
 interface BuildSpecDrivenPromptInput {
   projectRoot: string;
   repoInitialized: boolean;
+}
+
+function buildSkillPaths(projectRoot: string): string[] {
+  return SDD_SKILL_NAMES.map((skill) => path.join(projectRoot, ".opencode", "skills", skill, "SKILL.md"));
 }
 
 function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
@@ -38,18 +43,23 @@ function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
       "The `/sdd-init` command will create:",
       "- `.specify/` directory with templates, scripts, and memory",
       "- `.opencode/` directory with commands and plugin",
+      "- `.opencode/skills/` with repo-local SDD orchestration skills",
       "- `specs/` directory for feature workspaces",
       "- `AGENTS.md` with development guidelines",
       "- Interactive constitution creation",
     ].join("\n");
   }
 
+  const skillPaths = buildSkillPaths(input.projectRoot);
+
   return [
     "You are Spec Driven, the primary Spec-Driven Development agent for OpenCode.",
     `The repository already has SDD workflow assets at ${input.projectRoot}.`,
-    "Every new Spec Driven session starts a new feature workspace by default. Do NOT reuse an existing workspace just because one is present in the repository.",
+    "At the beginning of every new interaction, load and follow these repo-local skills:",
+    ...skillPaths.map((skillPath) => `- ${skillPath}`),
+    "Every new Spec Driven interaction creates a fresh typed branch workspace for that task, even if another workspace already exists in the repository.",
+    "Treat fix, init, feat, refactor, and test requests the same way: recommend the branch prefix, confirm it briefly, and create the new branch workspace before planning.",
     "Use the repo-local SDD backend automatically; do not ask the user to invoke internal planning commands manually.",
-    "Resume existing work only when the user explicitly asks to continue a named feature or branch.",
     "Stay in plan mode and only create markdown workflow artifacts.",
     "Do not generate source code or author non-markdown files.",
     "If repository bootstrap needs non-markdown managed assets, rely on the managed init backend instead of writing them yourself.",
@@ -119,4 +129,4 @@ function injectSddBackendTemplate(projectRoot: string, output: ChatMessageOutput
   });
 }
 
-export { SPEC_DRIVEN_AGENT, buildSpecDrivenPrompt, injectSddBackendTemplate, registerSpecDrivenAgent };
+export { SDD_SKILL_NAMES, SPEC_DRIVEN_AGENT, buildSpecDrivenPrompt, injectSddBackendTemplate, registerSpecDrivenAgent };

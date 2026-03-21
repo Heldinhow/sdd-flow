@@ -1,6 +1,6 @@
 {
   "name": "@helldinhow/sdd-flow-opencode-plugin",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "OpenCode Spec-Driven Development workflow plugin and bootstrap kit",
   "license": "MIT",
   "homepage": "https://github.com/Heldinhow/sdd-flow#readme",
@@ -35,7 +35,6 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "postinstall": "node scripts/install-skill.js",
     "prepublishOnly": "bunx tsc --noEmit && bun test tests/unit/packaging/"
   },
   "dependencies": {

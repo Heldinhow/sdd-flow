@@ -187,7 +187,7 @@ fi
 FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
 mkdir -p "$FEATURE_DIR"
 
-TEMPLATE=$(resolve_template "spec-template" "$REPO_ROOT") || true
+TEMPLATE="$(resolve_template "spec-template" "$REPO_ROOT")" || true
 SPEC_FILE="$FEATURE_DIR/spec.md"
 if [ -n "$TEMPLATE" ] && [ -f "$TEMPLATE" ]; then
     cp "$TEMPLATE" "$SPEC_FILE"

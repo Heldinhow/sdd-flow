@@ -16,8 +16,11 @@ describe("repo initialization modules", () => {
     const relativePaths = manifest.map((asset) => asset.relativePath);
 
     expect(relativePaths).toContain(".opencode/command/sdd.md");
+    expect(relativePaths).toContain(".opencode/skills/sdd-flow/SKILL.md");
+    expect(relativePaths).toContain(".opencode/skills/sdd-tasks/SKILL.md");
     expect(relativePaths).toContain(".specify/scripts/bash/create-new-feature.sh");
     expect(relativePaths).toContain(".specify/templates/spec-template.md");
+    expect(relativePaths).toContain(".specify/memory/constitution.md");
     expect(relativePaths).toContain("AGENTS.md");
   });
 
@@ -56,8 +59,10 @@ describe("repo initialization modules", () => {
 
     expect(result.addedAssets.length).toBeGreaterThan(0);
     expect(result.reviewAssets).toContain(".opencode/command/sdd.md");
-    expect(result.nextRecommendation).toContain("/sdd");
+    expect(result.addedAssets).toContain(".opencode/skills/sdd-flow/SKILL.md");
+    expect(result.nextRecommendation).toContain("Spec Driven");
     expect(await Bun.file(path.join(targetRoot, ".specify/templates/spec-template.md")).exists()).toBe(true);
+    expect(await Bun.file(path.join(targetRoot, ".opencode/skills/sdd-plan/SKILL.md")).exists()).toBe(true);
     expect(await Bun.file(customCommandPath).text()).toBe("custom command\n");
   });
 });

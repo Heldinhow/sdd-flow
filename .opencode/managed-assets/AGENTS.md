@@ -229,10 +229,16 @@ Valid prefixes: `feat`, `fix`, `refactor`, `init`, `test`
 ## SDD Workflow Commands
 
 - **`Spec Driven`** — Primary user-facing agent in OpenCode (plan mode only)
-- **`/sdd`** — Repo-local backend for init, specify, clarify, plan, tasks
 - **`/sdd-init`** — Initialize SDD workflow in a repository (creates directories, files, constitution)
 - **`/implement`** — Execute implementation plan (loads planning artifacts as context)
 - **`/speckit.*`** — Compatibility wrappers for existing speckit commands
+
+### Repo-Local Skills
+
+- **`sdd-flow`** — Orchestration, branch-per-interaction policy, and approval gates
+- **`sdd-spec`** — `spec.md` authoring and clarification loop
+- **`sdd-plan`** — Planning package generation after spec approval
+- **`sdd-tasks`** — `tasks.md` generation after plan approval
 
 ### Command Usage
 
@@ -243,17 +249,13 @@ Valid prefixes: `feat`, `fix`, `refactor`, `init`, `test`
 /sdd-init
 
 # 2. Switch back to Spec Driven agent after init completes
-# 3. Start planning a feature
-/sdd
+# 3. Describe the task in natural language
 ```
 
 #### Feature Planning Flow
 
 ```bash
-# Plan a new feature (creates spec.md, plan.md, research.md, quickstart.md, tasks.md)
-/sdd
-
-# After planning is complete, execute implementation
+# Plan a new feature with Spec Driven, then execute implementation
 /implement
 ```
 
@@ -261,14 +263,13 @@ Valid prefixes: `feat`, `fix`, `refactor`, `init`, `test`
 
 - **`/sdd-init`**: Switches to build agent (requires full file permissions)
 - **`/implement`**: Switches to build agent (requires code execution permissions)
-- **`/sdd`**: Runs under Spec Driven agent (plan mode only)
 
 ### Session-Scoped Workspace Rule
 
-Every new Spec Driven session creates a new feature workspace by default. Resume is only for explicit user requests.
+Every new Spec Driven interaction creates a new typed feature workspace by default.
 
-- **New session**: New workspace — even if an old workspace exists
-- **Resume**: Only when user explicitly asks to continue a named feature/branch
+- **New interaction**: New workspace and branch — even if an old workspace exists
+- **Typed prefixes**: `feat`, `fix`, `refactor`, `init`, `test`
 
 ### Phase Flow
 
@@ -284,12 +285,12 @@ The SDD workflow creates and uses these artifacts:
 
 | Artifact | Purpose | Created By |
 |----------|---------|------------|
-| `spec.md` | Feature specification with user stories | `/sdd` |
-| `plan.md` | Implementation plan with technical decisions | `/sdd` |
-| `research.md` | Research findings and technical decisions | `/sdd` |
-| `data-model.md` | Entity definitions (if applicable) | `/sdd` |
-| `quickstart.md` | Usage guide and examples | `/sdd` |
-| `tasks.md` | Task breakdown for implementation | `/sdd` |
+| `spec.md` | Feature specification with user stories | `Spec Driven` + `sdd-spec` |
+| `plan.md` | Implementation plan with technical decisions | `Spec Driven` + `sdd-plan` |
+| `research.md` | Research findings and technical decisions | `Spec Driven` + `sdd-plan` |
+| `data-model.md` | Entity definitions (if applicable) | `Spec Driven` + `sdd-plan` |
+| `quickstart.md` | Usage guide and examples | `Spec Driven` + `sdd-plan` |
+| `tasks.md` | Task breakdown for implementation | `Spec Driven` + `sdd-tasks` |
 
 All planning artifacts are automatically loaded by `/implement` as context for code execution.
 

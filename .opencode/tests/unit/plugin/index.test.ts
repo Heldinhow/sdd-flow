@@ -77,6 +77,7 @@ describe("sdd plugin", () => {
 
     expect(output.system.join("\n")).toContain("Spec Driven");
     expect(output.system.join("\n")).toContain("internal repo-local SDD backend");
+    expect(output.system.join("\n")).toContain("sdd-flow, sdd-spec, sdd-plan, sdd-tasks");
     expect(output.system.join("\n")).toContain("feat");
   });
 
@@ -296,6 +297,8 @@ agent: build
     const agentConfig = config.agent?.["Spec Driven"] as { prompt?: string };
     expect(agentConfig.prompt).toContain("Spec Driven");
     expect(agentConfig.prompt).toContain("SDD workflow");
+    expect(agentConfig.prompt).toContain(".opencode/skills/sdd-flow/SKILL.md");
+    expect(agentConfig.prompt).toContain("Every new Spec Driven interaction creates a fresh typed branch workspace");
     expect(agentConfig.prompt).not.toContain("Repository Not Initialized");
   });
 });
