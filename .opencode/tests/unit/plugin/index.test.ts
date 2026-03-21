@@ -76,8 +76,23 @@ describe("sdd plugin", () => {
     );
 
     expect(output.system.join("\n")).toContain("Spec Driven");
-    expect(output.system.join("\n")).toContain("/sdd");
+    expect(output.system.join("\n")).toContain("internal repo-local SDD backend");
     expect(output.system.join("\n")).toContain("feat");
+  });
+
+  it("does not register /sdd as a public command", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-commands-"));
+    mkdirSync(path.join(projectRoot, ".specify"));
+    mkdirSync(path.join(projectRoot, "specs"));
+
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const config = { agent: {}, command: {} } as PluginConfigInput & { command: Record<string, unknown> };
+
+    await hooks.config?.(config);
+
+    expect(config.command.sdd).toBeUndefined();
+    expect(config.command["sdd-init"]).toBeDefined();
+    expect(config.command.implement).toBeDefined();
   });
 
   it("injects the repo-local /sdd backend template for Spec Driven messages", async () => {
