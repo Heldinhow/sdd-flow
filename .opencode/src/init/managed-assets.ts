@@ -21,7 +21,6 @@ const MANAGED_ASSET_ROOT = {
   OPENCODE_TSCONFIG: ".opencode/tsconfig.json",
   SPECIFY_SCRIPTS: ".specify/scripts/bash",
   SPECIFY_TEMPLATES: ".specify/templates",
-  SPECIFY_MEMORY: ".specify/memory/constitution.md",
   GUIDE: "AGENTS.md",
 } as const;
 

@@ -99,7 +99,7 @@ When the user invokes `/sdd init` or the system detects uninitialized repository
 **Key rules for initialization**:
 - Always preserve user-managed customizations in `.specify/` and `.opencode/`
 - Only install missing managed files; do not replace existing ones unless the user explicitly approves
-- Create `.specify/memory/constitution.md` from the template if it does not exist
+- `AGENTS.md` is the primary development guidelines; constitution (`.specify/memory/constitution.md`) is only created explicitly via `/speckit.constitution`
 - Ensure `AGENTS.md` is created or updated with the current planning stack
 - Expose one clear user-facing entrypoint through the `Spec Driven` agent while keeping `/sdd` as the guided workflow backend
 

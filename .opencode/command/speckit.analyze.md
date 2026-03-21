@@ -60,9 +60,10 @@ Load only the minimal necessary context from each artifact:
 - Parallel markers [P]
 - Referenced file paths
 
-**From constitution:**
+**From AGENTS.md and constitution:**
 
-- Load `.specify/memory/constitution.md` for principle validation
+- Load `AGENTS.md` for active development guidelines and conventions
+- Constitution (`.specify/memory/constitution.md`) is optional — only validate against it if the file exists AND contains actual filled principles (not template placeholders like `[PRINCIPLE_NAME]`)
 
 ### 3. Build Semantic Models
 
@@ -96,7 +97,7 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 #### D. Constitution Alignment
 
 - Any requirement or plan element conflicting with a MUST principle
-- Missing mandated sections or quality gates from constitution
+- Missing mandated sections or quality gates from constitution (only if constitution exists with real content)
 
 #### E. Coverage Gaps
 
