@@ -1,0 +1,12 @@
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+.env*
+.vscode/
+.idea/
+.opencode/node_modules/
+.opencode/dist/
+.opencode/build/
+.opencode/coverage/
