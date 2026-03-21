@@ -9,6 +9,7 @@ import { type WorkflowPhase } from "./session-state";
 interface ResumeFlowInput {
   repoRoot: string;
   activeFeature?: string;
+  hasResumeIntent?: boolean;
 }
 
 interface ResumeFlowResult {
@@ -16,6 +17,7 @@ interface ResumeFlowResult {
   featureRoot: string | null;
   phase: WorkflowPhase;
   nextRecommendation: string;
+  hasResumeIntent: boolean;
 }
 
 function hasInitializedRepo(repoRoot: string): boolean {
@@ -23,24 +25,62 @@ function hasInitializedRepo(repoRoot: string): boolean {
 }
 
 function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
-  const activeFeature = input.activeFeature ?? detectActiveWorkspace(input.repoRoot);
-  if (!activeFeature) {
+  const hasResumeIntent = input.hasResumeIntent ?? false;
+
+  if (!input.activeFeature) {
+    if (!hasResumeIntent) {
+      const evaluation = evaluateArtifactState({
+        repoInitialized: hasInitializedRepo(input.repoRoot),
+        specExists: false,
+        planExists: false,
+        tasksExists: false,
+      });
+
+      return {
+        activeFeature: null,
+        featureRoot: null,
+        phase: evaluation.phase,
+        nextRecommendation: evaluation.nextRecommendation,
+        hasResumeIntent: false,
+      };
+    }
+
+    const detected = detectActiveWorkspace(input.repoRoot);
+    if (!detected) {
+      const evaluation = evaluateArtifactState({
+        repoInitialized: hasInitializedRepo(input.repoRoot),
+        specExists: false,
+        planExists: false,
+        tasksExists: false,
+      });
+
+      return {
+        activeFeature: null,
+        featureRoot: null,
+        phase: evaluation.phase,
+        nextRecommendation: evaluation.nextRecommendation,
+        hasResumeIntent: false,
+      };
+    }
+
+    const context = loadWorkflowContext({ repoRoot: input.repoRoot, activeFeature: detected });
     const evaluation = evaluateArtifactState({
-      repoInitialized: hasInitializedRepo(input.repoRoot),
-      specExists: false,
-      planExists: false,
-      tasksExists: false,
+      repoInitialized: context.repoInitialized,
+      specExists: context.artifacts.specExists,
+      planExists: context.artifacts.planExists,
+      tasksExists: context.artifacts.tasksExists,
     });
 
     return {
-      activeFeature: null,
-      featureRoot: null,
+      activeFeature: detected,
+      featureRoot: path.join(input.repoRoot, "specs", detected),
       phase: evaluation.phase,
       nextRecommendation: evaluation.nextRecommendation,
+      hasResumeIntent: true,
     };
   }
 
-  const context = loadWorkflowContext({ repoRoot: input.repoRoot, activeFeature });
+  const context = loadWorkflowContext({ repoRoot: input.repoRoot, activeFeature: input.activeFeature });
   const evaluation = evaluateArtifactState({
     repoInitialized: context.repoInitialized,
     specExists: context.artifacts.specExists,
@@ -49,10 +89,11 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
   });
 
   return {
-    activeFeature,
-    featureRoot: path.join(input.repoRoot, "specs", activeFeature),
+    activeFeature: input.activeFeature,
+    featureRoot: path.join(input.repoRoot, "specs", input.activeFeature),
     phase: evaluation.phase,
     nextRecommendation: evaluation.nextRecommendation,
+    hasResumeIntent: true,
   };
 }
 

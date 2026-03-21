@@ -1,8 +1,8 @@
 ---
-description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to default agent for code execution.
+description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to build agent for code execution.
 handoffs:
   - label: Implement Tasks
-    agent: default
+    agent: build
     prompt: |
       Execute the implementation plan for this feature workspace.
       Follow the implementation flow from /speckit.implement...
@@ -54,7 +54,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 Execute the implementation plan by processing and executing all tasks defined in tasks.md.
 
-**IMPORTANT**: This command switches to the DEFAULT agent (with full edit/bash permissions) for code execution.
+**IMPORTANT**: This command switches to the BUILD agent (with full edit/bash permissions) for code execution. The `build` agent is the available execution agent in this environment.
 
 ---
 

@@ -25,7 +25,7 @@ description: Test command description
 description: Test command
 handoffs:
   - label: Test Handoff
-    agent: default
+    agent: build
 ---
 
 # Command content`;
@@ -35,7 +35,7 @@ handoffs:
       expect(result).not.toBeNull();
       expect(result!.handoffs).toBeDefined();
       expect(result!.handoffs!.length).toBeGreaterThan(0);
-      expect(result!.handoffs![0].agent).toBe("default");
+      expect(result!.handoffs![0].agent).toBe("build");
     });
 
     it("returns null for content without frontmatter", () => {
@@ -51,7 +51,7 @@ handoffs:
 description: Initialize SDD workflow
 handoffs:
   - label: Initialize Repository
-    agent: default
+    agent: build
     prompt: |
       Initialize SDD workflow.
 ---
@@ -63,7 +63,7 @@ handoffs:
       expect(result).not.toBeNull();
       expect(result!.description).toBe("Initialize SDD workflow");
       expect(result!.handoffs).toBeDefined();
-      expect(result!.handoffs![0].agent).toBe("default");
+      expect(result!.handoffs![0].agent).toBe("build");
     });
   });
 
@@ -101,7 +101,7 @@ description: Test command
 description: Initialize SDD workflow
 handoffs:
   - label: Initialize
-    agent: default
+    agent: build
 ---
 
 # Content`
@@ -112,7 +112,7 @@ handoffs:
 
       expect(entry).toBeDefined();
       expect(entry!.description).toBe("Initialize SDD workflow");
-      expect(entry!.agent).toBe("default");
+      expect(entry!.agent).toBe("build");
 
       rmSync(testRoot, { recursive: true, force: true });
     });
@@ -130,6 +130,22 @@ handoffs:
       expect(commands.has("implement")).toBe(true);
 
       rmSync(testRoot, { recursive: true, force: true });
+    });
+
+    it("resolves sdd-init command to build agent", () => {
+      const commands = discoverCommands(process.cwd());
+
+      const entry = commands.get("sdd-init");
+      expect(entry).toBeDefined();
+      expect(entry!.agent).toBe("build");
+    });
+
+    it("resolves implement command to build agent", () => {
+      const commands = discoverCommands(process.cwd());
+
+      const entry = commands.get("implement");
+      expect(entry).toBeDefined();
+      expect(entry!.agent).toBe("build");
     });
 
     it("sets template path correctly", () => {

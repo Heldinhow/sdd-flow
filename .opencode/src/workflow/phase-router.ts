@@ -5,7 +5,7 @@ function determineNextPhase(input: WorkflowRouteInput): WorkflowPhase {
     return WORKFLOW_PHASE.INIT;
   }
 
-  if (!input.specExists) {
+  if (!input.hasResumeIntent && !input.specExists) {
     return WORKFLOW_PHASE.SPECIFY;
   }
 

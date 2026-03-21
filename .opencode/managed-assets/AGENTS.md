@@ -259,9 +259,16 @@ Valid prefixes: `feat`, `fix`, `refactor`, `init`, `test`
 
 #### Agent Handoff
 
-- **`/sdd-init`**: Switches to default agent (requires full file permissions)
-- **`/implement`**: Switches to default agent (requires code execution permissions)
+- **`/sdd-init`**: Switches to build agent (requires full file permissions)
+- **`/implement`**: Switches to build agent (requires code execution permissions)
 - **`/sdd`**: Runs under Spec Driven agent (plan mode only)
+
+### Session-Scoped Workspace Rule
+
+Every new Spec Driven session creates a new feature workspace by default. Resume is only for explicit user requests.
+
+- **New session**: New workspace — even if an old workspace exists
+- **Resume**: Only when user explicitly asks to continue a named feature/branch
 
 ### Phase Flow
 

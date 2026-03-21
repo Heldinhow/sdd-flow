@@ -27,6 +27,7 @@ interface WorkflowRouteInput {
   planExists: boolean;
   tasksExists: boolean;
   hasOutstandingClarifications: boolean;
+  hasResumeIntent: boolean;
 }
 
 interface WorkflowSessionState {
