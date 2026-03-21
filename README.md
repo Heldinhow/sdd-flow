@@ -19,7 +19,15 @@ It provides:
 
 ## Get Started
 
-### 1. Add the plugin to OpenCode
+### 1. Install the plugin globally
+
+```bash
+npm install -g @helldinhow/sdd-flow-opencode-plugin@latest
+```
+
+This also installs the `sdd-artifact-guard` skill to `~/.opencode/skills/`.
+
+### 2. Add the plugin to OpenCode
 
 Recommended for personal use: add the plugin to `~/.config/opencode/opencode.json`.
 
@@ -39,13 +47,13 @@ For a repo-shared setup, use the same `plugin` entry in a project-level `opencod
 
 After saving the config, start or restart OpenCode in a repository so it can install the package and load the plugin.
 
-### 2. Open any repository in OpenCode
+### 3. Open any repository in OpenCode
 
 ```bash
 opencode /path/to/your-repo
 ```
 
-### 3. Select `Spec Driven`
+### 4. Select `Spec Driven`
 
 - `Spec Driven` is the user-facing SDD entrypoint
 - it runs in plan mode
@@ -54,11 +62,11 @@ opencode /path/to/your-repo
 
 After OpenCode loads the plugin, `Spec Driven` should appear in the available agent list. If it does not appear, restart OpenCode and confirm that the package name in your config is exactly `@helldinhow/sdd-flow-opencode-plugin`. If the package is still unpublished, use the Local Development flow below instead.
 
-### 4. Let the repository bootstrap itself when needed
+### 5. Let the repository bootstrap itself when needed
 
 If the repository is missing SDD workflow assets, `Spec Driven` is designed to route you into the managed init path so the workflow can install or merge the stack non-destructively.
 
-### 5. Continue the guided planning flow
+### 6. Continue the guided planning flow
 
 After bootstrap:
 - keep using `Spec Driven` as the conversational entrypoint
