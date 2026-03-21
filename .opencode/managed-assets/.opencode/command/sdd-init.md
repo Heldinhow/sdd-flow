@@ -1,5 +1,6 @@
 ---
 description: Initialize SDD workflow in a repository — creates all required directories, files, templates, and constitution interactively. Must be run before Spec Driven agent can be used.
+agent: build
 handoffs:
   - label: Initialize Repository
     agent: build

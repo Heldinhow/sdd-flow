@@ -1,5 +1,6 @@
 ---
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md. Switches to build agent for code execution.
+agent: build
 handoffs:
   - label: Implement Tasks
     agent: build
