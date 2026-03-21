@@ -4,6 +4,7 @@ import path from "node:path";
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 
 import { BRANCH_PREFIX_VALUES } from "../branching/prefixes";
+import { registerCommands } from "./command-registry";
 import {
   SPEC_DRIVEN_AGENT,
   buildSpecDrivenPrompt,
@@ -59,6 +60,8 @@ const sddPlugin: Plugin = async (input) => {
           repoInitialized,
         }),
       );
+
+      registerCommands(config, projectRoot);
     },
     async "shell.env"(_event, output) {
       output.env.SPECIFY_REPO_ROOT = projectRoot;

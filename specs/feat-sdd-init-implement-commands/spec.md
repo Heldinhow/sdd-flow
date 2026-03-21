@@ -100,6 +100,26 @@ A developer using the Spec Driven agent in an uninitialized repository sees a cl
 
 ---
 
+### User Story 5 - Command Discovery and Registration (Priority: P0)
+
+**CRITICAL**: Command files exist in `.opencode/command/` but are NOT registered with OpenCode. The plugin must register commands via `config.command` for them to be discoverable.
+
+A developer installs the SDD plugin and expects all commands (`/sdd-init`, `/sdd`, `/implement`, `speckit.*`) to be available in OpenCode. Without command registration, commands are invisible to OpenCode and cannot be invoked.
+
+**Why this priority**: This is a BLOCKER. Without command registration, no commands work at all.
+
+**Independent Test**: After plugin loads, typing `/` in OpenCode shows `/sdd-init`, `/sdd`, `/implement`, and all `speckit.*` commands.
+
+**Acceptance Scenarios**:
+
+1. **Given** plugin loads, **When** OpenCode initializes, **Then** `config.command` contains all commands from `.opencode/command/`
+2. **Given** command file has `description` in frontmatter, **When** command is registered, **Then** `description` is included in `config.command[name]`
+3. **Given** command file has `handoffs[].agent` in frontmatter,**When** command is registered, **Then** `agent` is included in `config.command[name]`
+4. **Given** user types `/` in OpenCode, **When** command palette opens, **Then** `/sdd-init`, `/sdd`, `/implement` appear in the list
+5. **Given** user runs `/sdd-init`, **When** OpenCode processes command, **Then** command template is loaded and agent handoff occurs
+
+---
+
 ### User Story 4 - Complete Workflow (Priority: P3)
 
 A developer follows the complete workflow: initialize → plan → implement, with clear agent handoffs at each stage.
@@ -152,6 +172,9 @@ A developer follows the complete workflow: initialize → plan → implement, wi
 - **FR-023**: Spec Driven agent MUST detect uninitialized repos via `hasSddMarkers()` check
 - **FR-024**: Spec Driven agent MUST display warning message for uninitialized repos
 - **FR-025**: Spec Driven agent MUST NOT proceed with planning until initialized
+- **FR-026**: Plugin MUST register all commands in `.opencode/command/` via `config.command` hook
+- **FR-027**: Plugin MUST parse YAML frontmatter from command files to extract `description` and `handoffs[].agent`
+- **FR-028**: Commands `/sdd-init`, `/sdd`, `/implement`, and all `speckit.*` commands MUST be discoverable in OpenCode
 
 ### Key Entities
 
@@ -175,9 +198,12 @@ A developer follows the complete workflow: initialize → plan → implement, wi
 
 - Create `.opencode/command/sdd-init.md` command file
 - Create `.opencode/command/implement.md` command file
+- **Create `.opencode/src/plugin/command-registry.ts` to register commands with OpenCode**
+- **Update `.opencode/src/plugin/index.ts` to call `registerCommands()` in config hook**
 - Update `.opencode/src/plugin/spec-driven-agent.ts` to detect uninitialized repos and provide warning
 
 ### Out of Scope
 
 - Modifying `/speckit.constitution` or `/speckit.implement` (they remain as-is)
-- Changing the existing `/sdd` command behavior (it continues as the planning entrypoint)- Creating new agents (uses existing default agent handoff mechanism)
+- Changing the existing `/sdd` command behavior (it continues as the planning entrypoint)
+- Creating new agents (uses existing default agent handoff mechanism)

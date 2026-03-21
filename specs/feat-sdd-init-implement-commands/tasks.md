@@ -14,12 +14,44 @@
 
 ---
 
+## Phase 0: Command Registration (BLOCKER - Must Complete First)
+
+**Purpose**: Register commands with OpenCode plugin so `/sdd-init`, `/sdd`, and `/implement` are available
+
+**Issue**: Command files exist in `.opencode/command/` but are NOT registered with OpenCode. The plugin needs to register commands via `config.command` in the `config` hook.
+
+**User Story**: US5 - Command Discovery and Registration (Priority: P0)
+
+### Implementation
+
+- [X] T000a [US5] Create `.opencode/src/plugin/command-registry.ts` with:
+  - `parseYamlFrontmatter(content: string)` - Parse YAML frontmatter from command .md files
+  - `discoverCommands(projectRoot: string)` - Find all .md files in `.opencode/command/`
+  - `registerCommands(config: Config, projectRoot: string)` - Add commands to `config.command`
+
+- [X] T000b [US5] Update `.opencode/src/plugin/index.ts` to:
+  - Import `registerCommands` from `./command-registry`
+  - Call `registerCommands(config, projectRoot)` in the `config` hook after agent registration
+
+- [X] T000c [US5] Add unit tests for `command-registry.ts`:
+  - Test `parseYamlFrontmatter` extracts description and handoffs
+  - Test `discoverCommands` finds all .md files
+  - Test `registerCommands` populates config.command
+
+- [X] T000d [US5] Run typecheck: `cd .opencode && bunx tsc --noEmit`
+
+- [X] T000e [US5] Run unit tests: `cd .opencode && bun test`
+
+**Checkpoint**: Commands `/sdd-init`, `/sdd`, `/implement`, and all `speckit.*` commands are available in OpenCode
+
+---
+
 ## Phase 1: Setup
 
 **Purpose**: Create command file structure
 
-- [ ] T001 Create `.opencode/command/sdd-init.md` command file with YAML frontmatter
-- [ ] T002 [P] Create `.opencode/command/implement.md` command file with YAML frontmatter
+- [X] T001 Create `.opencode/command/sdd-init.md` command file with YAML frontmatter
+- [X] T002 [P] Create `.opencode/command/implement.md` command file with YAML frontmatter
 
 ---
 
@@ -31,14 +63,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] Add handoff configuration to `sdd-init.md` for default agent
-- [ ] T004 [US1] Write Phase 1 checklist: Directory Structure (`.specify/`, `.opencode/`, `specs/`)
-- [ ] T005 [US1] Write Phase 2 checklist: Template Files (copy from `.specify/templates/`)
-- [ ] T006 [US1] Write Phase 3 checklist: Shell Scripts (copy to `.specify/scripts/bash/`)
-- [ ] T007 [US1] Write Phase 4 checklist: OpenCode Integration (AGENTS.md, command files)
-- [ ] T008 [US1] Write Phase 5 checklist: Constitution Creation (interactive prompting)
-- [ ] T009 [US1] Write Phase 6 checklist: Verification (all files exist, no placeholders)
-- [ ] T010 [US1] Add user instructions: "Switch back to Spec Driven agent after completion"
+- [X] T003 [US1] Add handoff configuration to `sdd-init.md` for default agent
+- [X] T004 [US1] Write Phase 1 checklist: Directory Structure (`.specify/`, `.opencode/`, `specs/`)
+- [X] T005 [US1] Write Phase 2 checklist: Template Files (copy from `.specify/templates/`)
+- [X] T006 [US1] Write Phase 3 checklist: Shell Scripts (copy to `.specify/scripts/bash/`)
+- [X] T007 [US1] Write Phase 4 checklist: OpenCode Integration (AGENTS.md, command files)
+- [X] T008 [US1] Write Phase 5 checklist: Constitution Creation (interactive prompting)
+- [X] T009 [US1] Write Phase 6 checklist: Verification (all files exist, no placeholders)
+- [X] T010 [US1] Add user instructions: "Switch back to Spec Driven agent after completion"
 
 **Checkpoint**: `/sdd-init` command is complete and ready for testing
 
@@ -93,16 +125,16 @@
 
 ### Tests for User Story 4
 
-- [ ] T024 [P] [US4] Add test case: initialized repo returns normal prompt in `tests/unit/plugin/spec-driven-agent.test.ts`
-- [ ] T025 [P] [US4] Add test case: uninitialized repo returns warning prompt
+- [X] T024 [P] [US4] Add test case: initialized repo returns normal prompt in `tests/unit/plugin/spec-driven-agent.test.ts`
+- [X] T025 [P] [US4] Add test case: uninitialized repo returns warning prompt
 
 ### Implementation for User Story 4
 
-- [ ] T026 [US4] Modify `buildSpecDrivenPrompt()` in `.opencode/src/plugin/spec-driven-agent.ts`
-- [ ] T027 [US4] Add early return for `repoInitialized === false`
-- [ ] T028 [US4] Add warning message structure with clear instructions
-- [ ] T029 [US4] Add instruction to run `/sdd-init` first
-- [ ] T030 [US4] Add instruction to switch to default agent and back
+- [X] T026 [US4] Modify `buildSpecDrivenPrompt()` in `.opencode/src/plugin/spec-driven-agent.ts`
+- [X] T027 [US4] Add early return for `repoInitialized === false`
+- [X] T028 [US4] Add warning message structure with clear instructions
+- [X] T029 [US4] Add instruction to run `/sdd-init` first
+- [X] T030 [US4] Add instruction to switch to default agent and back
 
 **Checkpoint**: Spec Driven agent shows proper warning for uninitialized repos
 
@@ -125,16 +157,18 @@
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies - creates command files
-- **User Story 1 (Phase 2)**: Depends on T001 from Setup
-- **User Story 2 (Phase 3)**: No implementation tasks - verification only
-- **User Story 3 (Phase 4)**: Depends on T002 from Setup
-- **User Story 4 (Phase 5)**: No dependencies on other phases - can run in parallel
-- **Polish (Phase 6)**: Depends on Phases 2,4, 5 completion
+- **Phase 0 (Command Registration)**: **BLOCKER** - Must complete before any other phase
+- **Phase 1 (Setup)**: Depends on Phase 0 - command files exist but need registration to work
+- **Phase 2 (User Story 1)**: Depends on Phase 0 and Phase 1
+- **Phase 3 (User Story 2)**: No implementation tasks - verification only
+- **Phase 4 (User Story 3)**: Depends on Phase 0 and Phase 1
+- **Phase 5 (User Story 4)**: No dependencies on other phases - can run in parallel after Phase 0
+- **Phase 6 (Polish)**: Depends on all previous phases completion
 
 ### Parallel Opportunities
 
-- T001 and T002 can run in parallel (different files)
+- T000a and T000b must run sequentially (T000b depends on T000a)
+- T001 and T002 can run in parallel (different files) - but only after Phase 0
 - T011-T014 can run in parallel (verification tasks)
 - T024 and T025 can run in parallel (different test cases)
 - T032, T033, T034 can run in parallel (different verification)
@@ -143,6 +177,7 @@
 
 ## Notes
 
+- **Phase 0 is a CRITICAL BLOCKER**: Commands will not appear in OpenCode without registration
 - All command files use existing OpenCode handoff mechanism
 - TypeScript changes follow strict mode conventions
 - Tests verify both positive and negative cases

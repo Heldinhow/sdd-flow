@@ -34,6 +34,8 @@ Add two new OpenCode commands (`/sdd-init`, `/implement`) and update the Spec Dr
 |------|--------|
 | `.opencode/command/sdd-init.md` | **CREATE** - New initialization command with handoff to default agent |
 | `.opencode/command/implement.md` | **CREATE** - New implementation command with handoff to default agent |
+| `.opencode/src/plugin/command-registry.ts` | **CREATE** - Module to discover and register commands with OpenCode |
+| `.opencode/src/plugin/index.ts` | **MODIFY** - Call `registerCommands()` in config hook |
 | `.opencode/src/plugin/spec-driven-agent.ts` | **MODIFY** - Add uninitialized repo detection and warning |
 
 ## File Details
@@ -136,6 +138,65 @@ function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
   }
 
   // ... existing initialized prompt
+}
+```
+
+### 4. `.opencode/src/plugin/command-registry.ts`
+
+**Purpose**: Discover and register all commands with OpenCode
+
+**Why**: OpenCode requires explicit command registration via `config.command`. Command files in `.opencode/command/` are NOT auto-discovered.
+
+**Exports**:
+- `parseYamlFrontmatter(content: string)` - Parse YAML frontmatter from command .md files
+- `discoverCommands(projectRoot: string)` - Find all .md files in `.opencode/command/`
+- `registerCommands(config: Config, projectRoot: string)` - Add commands to `config.command`
+
+**Key Logic**:
+```typescript
+interface CommandEntry {
+  template: string;
+  description?: string;
+  agent?: string;
+}
+
+function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  // Extract description and handoffs[].agent
+}
+
+function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
+  const commandsDir = path.join(projectRoot, ".opencode", "command");
+  // Read all .md files, parse frontmatter, return entries
+}
+
+function registerCommands(config: Config, projectRoot: string): void {
+  const commands = discoverCommands(projectRoot);
+  config.command ??= {};
+  for (const [name, entry] of commands) {
+    config.command[name] = {
+      template: entry.template,
+      description: entry.description,
+      agent: entry.agent,
+    };
+  }
+}
+```
+
+### 5. `.opencode/src/plugin/index.ts`
+
+**Purpose**: Call `registerCommands()` in config hook
+
+**Change**: Add import and function call
+
+```typescript
+// Add import
+import { registerCommands } from "./command-registry";
+
+// In config hook
+async config(config) {
+  registerSpecDrivenAgent(config, buildSpecDrivenPrompt({...}));
+  registerCommands(config, projectRoot); // NEW LINE
 }
 ```
 

@@ -1,0 +1,132 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+import type { Config } from "@opencode-ai/sdk";
+
+interface CommandFrontmatter {
+  description?: string;
+  handoffs?: Array<{
+    label: string;
+    agent: string;
+    prompt?: string;
+  }>;
+}
+
+interface CommandEntry {
+  template: string;
+  description?: string;
+  agent?: string;
+}
+
+const COMMANDS_DIR = [".opencode", "command"] as const;
+
+function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!frontmatterMatch) {
+    return null;
+  }
+
+  const frontmatterText = frontmatterMatch[1];
+  const result: CommandFrontmatter = {};
+
+  const descriptionMatch = frontmatterText.match(/^description:\s*(.+)$/m);
+  if (descriptionMatch) {
+    result.description = descriptionMatch[1].trim();
+  }
+
+  const handoffsMatch = frontmatterText.match(/^handoffs:\s*\n((?:[ \t]+-[^\n]*(?:\n[ \t]+[^\n]+)*\n?)*)/m);
+  if (handoffsMatch) {
+    const handoffsBlock = handoffsMatch[1];
+    const handoffEntries = handoffsBlock.split(/^(?=\s+-\s)/m);
+
+    const handoffs: Array<{ agent: string; label?: string }> = [];
+
+    for (const entry of handoffEntries) {
+      if (!entry.trim()) continue;
+
+      const lines = entry.split("\n").filter((l) => l.trim());
+      const currentHandoff: { agent?: string; label?: string } = {};
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (trimmed.startsWith("- label:")) {
+          const labelMatch = trimmed.match(/label:\s*(.+)/);
+          if (labelMatch) {
+            currentHandoff.label = labelMatch[1].trim();
+          }
+        } else if (trimmed.startsWith("agent:")) {
+          const agentMatch = trimmed.match(/agent:\s*(.+)/);
+          if (agentMatch) {
+            currentHandoff.agent = agentMatch[1].trim();
+          }
+        }
+      }
+
+      if (currentHandoff.agent) {
+        handoffs.push(currentHandoff as { agent: string });
+      }
+    }
+
+    if (handoffs.length > 0) {
+      result.handoffs = handoffs as CommandFrontmatter["handoffs"];
+    }
+  }
+
+  return result;
+}
+
+function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
+  const commandsDir = path.join(projectRoot, ...COMMANDS_DIR);
+  const commands = new Map<string, CommandEntry>();
+
+  if (!existsSync(commandsDir)) {
+    return commands;
+  }
+
+  const files = readdirSync(commandsDir).filter((f) => f.endsWith(".md")).sort();
+
+  for (const file of files) {
+    const commandName = file.replace(/\.md$/, "");
+    const filePath = path.join(commandsDir, file);
+    const content = readFileSync(filePath, "utf8");
+
+    const frontmatter = parseYamlFrontmatter(content);
+    const entry: CommandEntry = {
+      template: path.join(...COMMANDS_DIR, file),
+    };
+
+    if (frontmatter?.description) {
+      entry.description = frontmatter.description;
+    }
+
+    if (frontmatter?.handoffs && frontmatter.handoffs.length > 0) {
+      entry.agent = frontmatter.handoffs[0].agent;
+    }
+
+    commands.set(commandName, entry);
+  }
+
+  return commands;
+}
+
+function registerCommands(config: Config, projectRoot: string): void {
+  const commands = discoverCommands(projectRoot);
+
+  if (commands.size === 0) {
+    return;
+  }
+
+  config.command ??= {};
+
+  for (const [name, entry] of commands) {
+    config.command[name] = {
+      template: entry.template,
+      description: entry.description,
+      agent: entry.agent,
+    };
+  }
+}
+
+export { discoverCommands, parseYamlFrontmatter, registerCommands };
+export type { CommandEntry, CommandFrontmatter };

@@ -116,4 +116,32 @@ describe("sdd plugin", () => {
     expect("id" in output.parts[0] ? output.parts[0].id : "").toStartWith("prt");
     expect("text" in output.parts[0] ? output.parts[0].text : "").toContain("Run /sdd with plan auth flow");
   });
+
+  it("shows warning prompt for uninitialized repo", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-uninit-"));
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const config = { agent: {} } as PluginConfigInput;
+
+    await hooks.config?.(config);
+
+    const agentConfig = config.agent?.["Spec Driven"] as { prompt?: string };
+    expect(agentConfig.prompt).toContain("Repository Not Initialized");
+    expect(agentConfig.prompt).toContain("/sdd-init");
+    expect(agentConfig.prompt).toContain("Switch to the default agent");
+  });
+
+  it("shows normal prompt for initialized repo", async () => {
+    const projectRoot = mkdtempSync(path.join(tmpdir(), "sdd-plugin-init-"));
+    mkdirSync(path.join(projectRoot, ".specify"));
+    mkdirSync(path.join(projectRoot, "specs"));
+    const hooks = await sddPlugin(createPluginInput(projectRoot));
+    const config = { agent: {} } as PluginConfigInput;
+
+    await hooks.config?.(config);
+
+    const agentConfig = config.agent?.["Spec Driven"] as { prompt?: string };
+    expect(agentConfig.prompt).toContain("Spec Driven");
+    expect(agentConfig.prompt).toContain("SDD workflow");
+    expect(agentConfig.prompt).not.toContain("Repository Not Initialized");
+  });
 });
