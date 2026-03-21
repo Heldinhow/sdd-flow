@@ -3,7 +3,12 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { tmpdir } from "node:os";
 
-import { discoverCommands, parseYamlFrontmatter, registerCommands } from "../../../src/plugin/command-registry";
+import {
+  discoverCommands,
+  extractTemplateContent,
+  parseYamlFrontmatter,
+  registerCommands,
+} from "../../../src/plugin/command-registry";
 
 describe("command-registry", () => {
   describe("parseYamlFrontmatter", () => {
@@ -93,6 +98,21 @@ description: Simple command
 
       expect(result).not.toBeNull();
       expect(result!.scripts).toBeUndefined();
+    });
+
+    it("extracts template content without frontmatter", () => {
+      const content = `---
+description: Simple command
+agent: build
+---
+
+# Command Body
+
+Run this command.`;
+
+      expect(extractTemplateContent(content)).toBe(`# Command Body
+
+Run this command.`);
     });
   });
 
@@ -187,7 +207,7 @@ handoffs:
       expect(entry!.scripts!.sh).toContain("--require-tasks");
     });
 
-    it("sets template path correctly", () => {
+    it("stores command template content instead of a file path", () => {
       const testRoot = path.join(tmpdir(), "sdd-command-test-" + Date.now());
       rmSync(testRoot, { recursive: true, force: true });
       mkdirSync(path.join(testRoot, ".opencode", "command"), { recursive: true });
@@ -205,12 +225,13 @@ description: SDD command
       const entry = commands.get("sdd");
 
       expect(entry).toBeDefined();
-      expect(entry!.template).toBe(path.join(testRoot, ".opencode", "command", "sdd.md"));
+      expect(entry!.template).toBe("# Content");
+      expect(entry!.template).not.toContain(".opencode/command/sdd.md");
 
       rmSync(testRoot, { recursive: true, force: true });
     });
 
-    it("registers bundled commands with resolvable template paths before repo init", () => {
+    it("registers bundled commands with template content before repo init", () => {
       const testRoot = path.join(tmpdir(), "sdd-bundle-config-" + Date.now());
       rmSync(testRoot, { recursive: true, force: true });
       mkdirSync(testRoot, { recursive: true });
@@ -220,8 +241,8 @@ description: SDD command
 
       expect(config.command).toBeDefined();
       expect(config.command?.["sdd-init"]).toBeDefined();
-      expect(config.command?.["sdd-init"]?.template).toContain("managed-assets");
-      expect(config.command?.["sdd-init"]?.template).toEndWith(path.join(".opencode", "command", "sdd-init.md"));
+      expect(config.command?.["sdd-init"]?.template).toContain("## User Input");
+      expect(config.command?.["sdd-init"]?.template).not.toContain(".opencode/command/sdd-init.md");
 
       rmSync(testRoot, { recursive: true, force: true });
     });
