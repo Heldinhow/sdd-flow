@@ -230,7 +230,38 @@ Valid prefixes: `feat`, `fix`, `refactor`, `init`, `test`
 
 - **`Spec Driven`** — Primary user-facing agent in OpenCode (plan mode only)
 - **`/sdd`** — Repo-local backend for init, specify, clarify, plan, tasks
+- **`/sdd-init`** — Initialize SDD workflow in a repository (creates directories, files, constitution)
+- **`/implement`** — Execute implementation plan (loads planning artifacts as context)
 - **`/speckit.*`** — Compatibility wrappers for existing speckit commands
+
+### Command Usage
+
+#### First Time Setup
+
+```bash
+# 1. Initialize the repository for SDD workflow
+/sdd-init
+
+# 2. Switch back to Spec Driven agent after init completes
+# 3. Start planning a feature
+/sdd
+```
+
+#### Feature Planning Flow
+
+```bash
+# Plan a new feature (creates spec.md, plan.md, research.md, quickstart.md, tasks.md)
+/sdd
+
+# After planning is complete, execute implementation
+/implement
+```
+
+#### Agent Handoff
+
+- **`/sdd-init`**: Switches to default agent (requires full file permissions)
+- **`/implement`**: Switches to default agent (requires code execution permissions)
+- **`/sdd`**: Runs under Spec Driven agent (plan mode only)
 
 ### Phase Flow
 
@@ -239,6 +270,21 @@ INIT → SPECIFY → CLARIFY → PLAN → TASKS → COMPLETE
 ```
 
 Phase routing is handled by `.opencode/src/workflow/phase-router.ts`.
+
+### Planning Artifacts
+
+The SDD workflow creates and uses these artifacts:
+
+| Artifact | Purpose | Created By |
+|----------|---------|------------|
+| `spec.md` | Feature specification with user stories | `/sdd` |
+| `plan.md` | Implementation plan with technical decisions | `/sdd` |
+| `research.md` | Research findings and technical decisions | `/sdd` |
+| `data-model.md` | Entity definitions (if applicable) | `/sdd` |
+| `quickstart.md` | Usage guide and examples | `/sdd` |
+| `tasks.md` | Task breakdown for implementation | `/sdd` |
+
+All planning artifacts are automatically loaded by `/implement` as context for code execution.
 
 ---
 
