@@ -57,7 +57,22 @@ describe("clarify and resume workflows", () => {
     expect(evaluation.phase).toBe(WORKFLOW_PHASE.TASKS);
   });
 
-  it("resumes the workflow from the latest feature workspace", () => {
+  it("resumes the workflow from the latest feature workspace when resume intent is explicit", () => {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-resume-"));
+    const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
+    mkdirSync(path.join(repoRoot, ".specify"));
+    mkdirSync(featureRoot, { recursive: true });
+    writeFileSync(path.join(featureRoot, "spec.md"), "# spec\n");
+    writeFileSync(path.join(featureRoot, "plan.md"), "# plan\n");
+
+    const result = resumeFlow({ repoRoot, hasResumeIntent: true });
+
+    expect(result.activeFeature).toBe("feat-opencode-sdd-agent");
+    expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
+    expect(result.nextRecommendation).toContain("tasks");
+  });
+
+  it("does not auto-resume without explicit resume intent", () => {
     const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-resume-"));
     const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
     mkdirSync(path.join(repoRoot, ".specify"));
@@ -67,9 +82,8 @@ describe("clarify and resume workflows", () => {
 
     const result = resumeFlow({ repoRoot });
 
-    expect(result.activeFeature).toBe("feat-opencode-sdd-agent");
-    expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
-    expect(result.nextRecommendation).toContain("tasks");
+    expect(result.activeFeature).toBeNull();
+    expect(result.hasResumeIntent).toBe(false);
   });
 
   it("routes initialized repositories without an active feature to specify", () => {

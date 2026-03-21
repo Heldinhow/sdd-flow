@@ -67,20 +67,23 @@ Parse the JSON output to determine the next recommended action.
 
 ### Step 2: Route by detected state
 
+**IMPORTANT — Session-scoped workspace rule**: Every new Spec Driven session starts a new feature workspace by default. Do NOT reuse an existing workspace just because one is present. Resume is only for explicit user requests.
+
 **If the repository is not initialized** (managed assets missing or incomplete):
 - Route to **repository initialization flow**
 - Offer to install or merge the managed workflow assets non-destructively
 - After init completes, recommend starting the planning flow
 
-**If an active feature workspace exists** (spec.md or plan.md already present):
+**If the user explicitly asks to resume a named feature workspace**:
 - Route to **resume flow**
 - Detect the current phase from artifact presence
 - Recommend the next logical phase
 
-**If no active workspace and repository is initialized**:
+**In all other cases** (including when an active workspace already exists):
 - Route to **new feature planning flow**
 - Recommend a branch prefix and short name
 - Guide through specify → clarify → plan → tasks
+- A new session means a new workspace — do not enter resume mode automatically
 
 ### Step 3: Repository Initialization Flow (when needed)
 

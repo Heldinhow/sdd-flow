@@ -43,6 +43,7 @@ function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
     planExists: context.artifacts.planExists,
     tasksExists: context.artifacts.tasksExists,
     hasOutstandingClarifications,
+    hasResumeIntent: true,
   });
 
   return {

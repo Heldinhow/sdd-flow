@@ -2,7 +2,7 @@
 description: Initialize SDD workflow in a repository — creates all required directories, files, templates, and constitution interactively. Must be run before Spec Driven agent can be used.
 handoffs:
   - label: Initialize Repository
-    agent: default
+    agent: build
     prompt: |
       Initialize SDD workflow in this repository. Follow the mandatory checklist below to create all required directories, files, and constitution.
 ---
@@ -51,7 +51,7 @@ $ARGUMENTS
 
 You are initializing the SDD (Spec-Driven Development) workflow in this repository. This creates all required directory structure, template files, shell scripts, and constitution.
 
-**IMPORTANT**: This command MUST be executed by the DEFAULT agent (not Spec Driven) because it requires full file system and edit permissions.
+**IMPORTANT**: This command MUST be executed by the BUILD agent (not Spec Driven) because it requires full file system and edit permissions. The `build` agent is the available execution agent in this environment.
 
 ## MANDATORY CHECKLIST
 
