@@ -11,6 +11,8 @@ describe("phase router", () => {
         specExists: false,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
         hasOutstandingClarifications: false,
         hasResumeIntent: false,
       }),
@@ -24,23 +26,27 @@ describe("phase router", () => {
         specExists: true,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
         hasOutstandingClarifications: true,
         hasResumeIntent: false,
       }),
     ).toBe(WORKFLOW_PHASE.CLARIFY);
   });
 
-  it("routes to tasks after the planning package exists", () => {
+  it("routes to waiting_plan_approval when plan exists but is not approved", () => {
     expect(
       determineNextPhase({
         repoInitialized: true,
         specExists: true,
         planExists: true,
         tasksExists: false,
+        specApproved: true,
+        planApproved: false,
         hasOutstandingClarifications: false,
         hasResumeIntent: false,
       }),
-    ).toBe(WORKFLOW_PHASE.TASKS);
+    ).toBe(WORKFLOW_PHASE.WAITING_PLAN_APPROVAL);
   });
 
   it("routes to specify for new session without resume intent", () => {
@@ -50,6 +56,8 @@ describe("phase router", () => {
         specExists: false,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
         hasOutstandingClarifications: false,
         hasResumeIntent: false,
       }),
@@ -63,23 +71,57 @@ describe("phase router", () => {
         specExists: false,
         planExists: true,
         tasksExists: true,
+        specApproved: false,
+        planApproved: false,
         hasOutstandingClarifications: false,
         hasResumeIntent: false,
       }),
     ).toBe(WORKFLOW_PHASE.SPECIFY);
   });
 
-  it("routes to plan when resuming with existing spec", () => {
+  it("routes to waiting_spec_approval when spec exists but is not approved", () => {
     expect(
       determineNextPhase({
         repoInitialized: true,
         specExists: true,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
+        hasOutstandingClarifications: false,
+        hasResumeIntent: true,
+      }),
+    ).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+  });
+
+  it("routes to plan when spec is approved and plan does not exist", () => {
+    expect(
+      determineNextPhase({
+        repoInitialized: true,
+        specExists: true,
+        planExists: false,
+        tasksExists: false,
+        specApproved: true,
+        planApproved: false,
         hasOutstandingClarifications: false,
         hasResumeIntent: true,
       }),
     ).toBe(WORKFLOW_PHASE.PLAN);
+  });
+
+  it("routes to tasks when plan is approved and tasks do not exist", () => {
+    expect(
+      determineNextPhase({
+        repoInitialized: true,
+        specExists: true,
+        planExists: true,
+        tasksExists: false,
+        specApproved: true,
+        planApproved: true,
+        hasOutstandingClarifications: false,
+        hasResumeIntent: true,
+      }),
+    ).toBe(WORKFLOW_PHASE.TASKS);
   });
 
   it("returns a concrete recommendation for the next phase", () => {

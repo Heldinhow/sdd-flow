@@ -27,13 +27,15 @@ function hasInitializedRepo(repoRoot: string): boolean {
 function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
   const hasResumeIntent = input.hasResumeIntent ?? false;
 
-  if (!input.activeFeature) {
+    if (!input.activeFeature) {
     if (!hasResumeIntent) {
       const evaluation = evaluateArtifactState({
         repoInitialized: hasInitializedRepo(input.repoRoot),
         specExists: false,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
       });
 
       return {
@@ -52,6 +54,8 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
         specExists: false,
         planExists: false,
         tasksExists: false,
+        specApproved: false,
+        planApproved: false,
       });
 
       return {
@@ -69,6 +73,8 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
       specExists: context.artifacts.specExists,
       planExists: context.artifacts.planExists,
       tasksExists: context.artifacts.tasksExists,
+      specApproved: false,
+      planApproved: false,
     });
 
     return {
@@ -86,6 +92,8 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
     specExists: context.artifacts.specExists,
     planExists: context.artifacts.planExists,
     tasksExists: context.artifacts.tasksExists,
+    specApproved: false,
+    planApproved: false,
   });
 
   return {
