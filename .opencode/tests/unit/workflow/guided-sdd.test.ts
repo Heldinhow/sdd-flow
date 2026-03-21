@@ -52,7 +52,7 @@ describe("guided sdd workflow", () => {
     ]);
   });
 
-  it("routes a partially planned feature to the tasks phase", () => {
+  it("routes to waiting_spec_approval when no approval state is known", () => {
     const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-guided-"));
     const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
     mkdirSync(featureRoot, { recursive: true });
@@ -63,6 +63,25 @@ describe("guided sdd workflow", () => {
     const result = runGuidedSdd({
       repoRoot,
       activeFeature: "feat-opencode-sdd-agent",
+    });
+
+    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+    expect(result.nextRecommendation).toContain("approve");
+  });
+
+  it("routes to tasks when both spec and plan are approved", () => {
+    const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-guided-"));
+    const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
+    mkdirSync(featureRoot, { recursive: true });
+    mkdirSync(path.join(repoRoot, ".specify"));
+    writeFileSync(path.join(featureRoot, "spec.md"), "# spec\n");
+    writeFileSync(path.join(featureRoot, "plan.md"), "# plan\n");
+
+    const result = runGuidedSdd({
+      repoRoot,
+      activeFeature: "feat-opencode-sdd-agent",
+      specApproved: true,
+      planApproved: true,
     });
 
     expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);

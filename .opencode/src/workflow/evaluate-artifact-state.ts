@@ -6,6 +6,8 @@ interface EvaluateArtifactStateInput {
   specExists: boolean;
   planExists: boolean;
   tasksExists: boolean;
+  specApproved: boolean;
+  planApproved: boolean;
   hasOutstandingClarifications?: boolean;
   hasResumeIntent?: boolean;
 }
@@ -21,6 +23,8 @@ function evaluateArtifactState(input: EvaluateArtifactStateInput): ArtifactState
     specExists: input.specExists,
     planExists: input.planExists,
     tasksExists: input.tasksExists,
+    specApproved: input.specApproved,
+    planApproved: input.planApproved,
     hasOutstandingClarifications: input.hasOutstandingClarifications ?? false,
     hasResumeIntent: input.hasResumeIntent ?? false,
   });

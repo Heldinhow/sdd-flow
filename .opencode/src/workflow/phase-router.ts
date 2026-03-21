@@ -13,8 +13,16 @@ function determineNextPhase(input: WorkflowRouteInput): WorkflowPhase {
     return WORKFLOW_PHASE.CLARIFY;
   }
 
+  if (input.specExists && !input.specApproved) {
+    return WORKFLOW_PHASE.WAITING_SPEC_APPROVAL;
+  }
+
   if (!input.planExists) {
     return WORKFLOW_PHASE.PLAN;
+  }
+
+  if (input.planExists && !input.planApproved) {
+    return WORKFLOW_PHASE.WAITING_PLAN_APPROVAL;
   }
 
   if (!input.tasksExists) {
@@ -30,10 +38,14 @@ function getNextRecommendation(phase: WorkflowPhase): string {
       return "Run the repository initialization flow before starting feature planning.";
     case WORKFLOW_PHASE.SPECIFY:
       return "Create or update spec.md for the active feature request.";
+    case WORKFLOW_PHASE.WAITING_SPEC_APPROVAL:
+      return "Review and approve spec.md to unlock the planning stage.";
     case WORKFLOW_PHASE.CLARIFY:
       return "Resolve the remaining high-impact clarification questions before planning.";
     case WORKFLOW_PHASE.PLAN:
       return "Generate the planning package for the active feature workspace.";
+    case WORKFLOW_PHASE.WAITING_PLAN_APPROVAL:
+      return "Review and approve the planning package to unlock task generation.";
     case WORKFLOW_PHASE.TASKS:
       return "Generate tasks.md for the active feature workspace.";
     case WORKFLOW_PHASE.COMPLETE:

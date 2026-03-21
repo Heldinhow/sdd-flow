@@ -1,8 +1,10 @@
 const WORKFLOW_PHASE = {
   INIT: "init",
   SPECIFY: "specify",
+  WAITING_SPEC_APPROVAL: "waiting_spec_approval",
   CLARIFY: "clarify",
   PLAN: "plan",
+  WAITING_PLAN_APPROVAL: "waiting_plan_approval",
   TASKS: "tasks",
   COMPLETE: "complete",
 } as const;
@@ -26,6 +28,8 @@ interface WorkflowRouteInput {
   specExists: boolean;
   planExists: boolean;
   tasksExists: boolean;
+  specApproved: boolean;
+  planApproved: boolean;
   hasOutstandingClarifications: boolean;
   hasResumeIntent: boolean;
 }
@@ -34,6 +38,8 @@ interface WorkflowSessionState {
   phase: WorkflowPhase;
   activeFeature: string;
   artifacts: ArtifactState[];
+  specApproved: boolean;
+  planApproved: boolean;
   nextRecommendation: string;
 }
 

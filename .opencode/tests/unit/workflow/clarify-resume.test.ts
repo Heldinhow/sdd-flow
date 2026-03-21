@@ -46,18 +46,20 @@ describe("clarify and resume workflows", () => {
     expect(detectActiveWorkspace(repoRoot)).toBe("feat-new-workflow");
   });
 
-  it("evaluates artifact state and routes to tasks when plan exists but tasks do not", () => {
+  it("evaluates artifact state and routes to waiting_plan_approval when plan exists but is not approved", () => {
     const evaluation = evaluateArtifactState({
       repoInitialized: true,
       specExists: true,
       planExists: true,
       tasksExists: false,
+      specApproved: true,
+      planApproved: false,
     });
 
-    expect(evaluation.phase).toBe(WORKFLOW_PHASE.TASKS);
+    expect(evaluation.phase).toBe(WORKFLOW_PHASE.WAITING_PLAN_APPROVAL);
   });
 
-  it("resumes the workflow from the latest feature workspace when resume intent is explicit", () => {
+  it("resumes conservatively to waiting_spec_approval when spec exists but approval state is unknown", () => {
     const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-resume-"));
     const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
     mkdirSync(path.join(repoRoot, ".specify"));
@@ -68,8 +70,8 @@ describe("clarify and resume workflows", () => {
     const result = resumeFlow({ repoRoot, hasResumeIntent: true });
 
     expect(result.activeFeature).toBe("feat-opencode-sdd-agent");
-    expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
-    expect(result.nextRecommendation).toContain("tasks");
+    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+    expect(result.nextRecommendation).toContain("approve");
   });
 
   it("does not auto-resume without explicit resume intent", () => {

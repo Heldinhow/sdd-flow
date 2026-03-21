@@ -9,6 +9,8 @@ interface RunGuidedSddInput {
   activeFeature?: string;
   hasOutstandingClarifications?: boolean;
   clarificationContent?: string;
+  specApproved?: boolean;
+  planApproved?: boolean;
 }
 
 interface GuidedSddResult {
@@ -42,6 +44,8 @@ function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
     specExists: context.artifacts.specExists,
     planExists: context.artifacts.planExists,
     tasksExists: context.artifacts.tasksExists,
+    specApproved: input.specApproved ?? false,
+    planApproved: input.planApproved ?? false,
     hasOutstandingClarifications,
     hasResumeIntent: true,
   });
