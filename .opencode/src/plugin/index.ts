@@ -4,7 +4,8 @@ import path from "node:path";
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 
 import { BRANCH_PREFIX_VALUES } from "../branching/prefixes";
-import { registerCommands } from "./command-registry";
+import { discoverCommands, registerCommands } from "./command-registry";
+import { PreScriptRunner } from "./pre-script-runner";
 import {
   SPEC_DRIVEN_AGENT,
   buildSpecDrivenPrompt,
@@ -68,9 +69,40 @@ const sddPlugin: Plugin = async (input) => {
       output.env.SDD_PRIMARY_COMMAND = "sdd";
       output.env.SDD_BRANCH_PREFIXES = BRANCH_PREFIX_VALUES.join(",");
     },
-    async "chat.message"(event, output) {
-      if (!repoInitialized || event.agent !== SPEC_DRIVEN_AGENT) {
+    async "chat.message"(input, output) {
+      if (!repoInitialized || input.agent !== SPEC_DRIVEN_AGENT) {
         return;
+      }
+
+      const messageText = output.parts
+        .filter((part): part is Extract<typeof output.parts[number], { type: "text" }> => part.type === "text")
+        .map((part) => part.text)
+        .join("\n")
+        .trim();
+
+      if (messageText.startsWith("/")) {
+        const commandName = messageText.slice(1).split(/\s/).at(0) ?? "";
+        if (commandName) {
+          const commands = discoverCommands(projectRoot);
+          const entry = commands.get(commandName);
+          if (entry?.scripts?.sh) {
+            const runner = new PreScriptRunner((name) => {
+              const cmd = commands.get(name);
+              return cmd?.scripts ?? null;
+            });
+            const result = await runner.runIfNeeded(commandName, projectRoot);
+            if (result) {
+              output.parts.unshift({
+                id: `prt-${output.message.id}-prescript`,
+                sessionID: output.message.sessionID,
+                messageID: output.message.id,
+                type: "text",
+                synthetic: true,
+                text: result.formattedOutput,
+              });
+            }
+          }
+        }
       }
 
       injectSddBackendTemplate(projectRoot, output);

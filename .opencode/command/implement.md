@@ -19,12 +19,6 @@ When `/implement` is invoked, the system enters **implementation mode** — not 
 - Load `tasks.md` and supporting planning artifacts
 - Report execution progress or state a concrete blocker
 
-**Incorrect behavior** (do NOT do):
-
-```text
-$ARGUMENTS
-```
-
 You **MUST** consider the user input before proceeding (if not empty).
 
 ## Pre-Execution Checks

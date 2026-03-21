@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import type { Config } from "@opencode-ai/sdk";
 
-interface CommandScripts {
+export interface CommandScripts {
   sh?: string;
 }
 
