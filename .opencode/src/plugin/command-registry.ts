@@ -116,6 +116,15 @@ function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
   return result;
 }
 
+function extractTemplateContent(content: string): string {
+  const frontmatterMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  if (!frontmatterMatch) {
+    return content;
+  }
+
+  return content.slice(frontmatterMatch[0].length).replace(/^\r?\n/, "");
+}
+
 function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
   const repoLocalCommandsDir = resolveCommandsDir(projectRoot);
   const commands = new Map<string, CommandEntry>();
@@ -138,7 +147,7 @@ function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
 
     const frontmatter = parseYamlFrontmatter(content);
     const entry: CommandEntry = {
-      template: filePath,
+      template: extractTemplateContent(content),
       filePath,
     };
 
@@ -182,5 +191,5 @@ function registerCommands(config: Config, projectRoot: string): void {
   }
 }
 
-export { discoverCommands, parseYamlFrontmatter, registerCommands, resolvePackageRoot };
+export { discoverCommands, extractTemplateContent, parseYamlFrontmatter, registerCommands, resolvePackageRoot };
 export type { CommandEntry, CommandFrontmatter };
