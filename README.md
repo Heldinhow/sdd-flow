@@ -3,47 +3,143 @@
 <div align="center">
   <h1>sdd-flow</h1>
   <p><strong>Spec-Driven Development for OpenCode</strong></p>
-  <p>A plugin that injects a guided SDD workflow into your repository development — one visible agent, one consistent process, markdown artifacts you own.</p>
+  <p>One visible planning agent, one repository-owned workflow, and a full path from idea to implementation without making the user manually orchestrate <code>/speckit.*</code> commands.</p>
 </div>
 
 ---
 
-## What Problem It Solves
+## What This Project Is
 
-`sdd-flow` is an OpenCode plugin that brings Spec-Driven Development to any repository. Instead of starting a feature request with a blank slate, the workflow guides you through specification, clarification, planning, and task preparation — producing a complete, traceable artifact set in `specs/<feature>/` before a single line of code is written.
+`sdd-flow` is an OpenCode plugin that brings a complete Spec-Driven Development workflow into a repository.
 
-It is inspired by [Spec Kit](https://github.com/github/spec-kit) and [OpenSpec](https://github.com/Fission-AI/OpenSpec) as reference models for spec-first, artifact-driven development, adapted specifically for the OpenCode agent experience.
+Instead of jumping from a feature idea straight into code, the workflow guides the team through:
 
-## Key Concepts
+1. repository bootstrap
+2. feature specification
+3. clarification of ambiguity
+4. implementation planning
+5. task generation
+6. execution
 
-| Concept | Role |
-|---------|------|
-| **`Spec Driven`** | The visible planning agent registered by the plugin. Stays in plan mode. Only authors markdown. |
-| **`/sdd`** | The repo-local backend command that orchestrates the full guided workflow under `Spec Driven`. |
-| **`/sdd-init`** | A **one-time** bootstrap step that installs or merges managed workflow assets into a repository. Runs in build mode. |
-| **`/implement`** | Transitions to build mode and executes the work defined in `tasks.md`, phase by phase. |
-| **Managed assets** | The packaged scaffold (`.opencode/`, `.specify/`, `AGENTS.md`) that `sdd-init` installs or merges non-destructively. |
-| **Artifact guard** | The [`sdd-artifact-guard` skill](#workflow-guarantees) enforces the correct ordering and completeness of SDD artifacts. |
+The output is a versioned planning package inside `specs/<feature>/` that your team owns in Git:
+
+- `spec.md`
+- `plan.md`
+- `research.md`
+- `data-model.md`
+- `quickstart.md`
+- `tasks.md`
+
+The result is a workflow that is inspectable, auditable, reusable, and much easier to hand off between people and agents.
 
 ---
 
-## How the Workflow Works
+## Why This Exists
 
-The end-to-end flow has four distinct stages. Read this section to understand what each step does and which agent or command owns it.
+This project was created to make Spec-Driven Development feel natural inside OpenCode.
 
+Tools like [Spec Kit](https://github.com/github/spec-kit) are strong references for spec-first development, but they still assume the user knows which command to run next and when to move between phases. In practice, that creates friction:
+
+- users need to remember `specify`, `clarify`, `plan`, `tasks`, and `implement`
+- the workflow can feel like a toolbox instead of a guided system
+- the command surface is powerful, but not very approachable for day-to-day agent-first usage
+
+`sdd-flow` keeps the strengths of the spec-driven model while changing the user experience:
+
+- **one user-facing planning agent**: `Spec Driven`
+- **one internal repo-local backend workflow** used automatically by `Spec Driven`
+- **one bootstrap step**: `/sdd-init`
+- **one execution entrypoint**: `/implement`
+
+The main design goal is simple:
+
+> put the flow in the hands of the agent, not in the memory of the user.
+
+That means the user should mostly:
+
+1. initialize once with `/sdd-init`
+2. switch to `Spec Driven`
+3. describe the feature they want
+4. review and approve each phase
+5. run `/implement` when planning is complete
+
+The agent should handle the rest.
+
+---
+
+## What Makes It Different From Spec Kit
+
+`sdd-flow` is not anti-Spec Kit. It is an adaptation of spec-driven principles for OpenCode's agent model.
+
+### Spec Kit style
+
+- command-oriented
+- user often decides which phase command to invoke
+- strong artifact discipline
+- good for teams already comfortable with the command set
+
+### sdd-flow style
+
+- agent-oriented
+- the `Spec Driven` agent owns the planning flow
+- the user approves phase transitions instead of manually driving them
+- repo-local workflow assets are installed directly into the repository
+- compatibility wrappers still exist for `speckit.*`, but they are not the primary UX
+
+Put another way:
+
+- **Spec Kit** is a strong command model for spec-driven work
+- **sdd-flow** is a guided OpenCode experience built on the same spec-first philosophy
+
+---
+
+## Core Concepts
+
+| Concept | Role |
+|---------|------|
+| **`Spec Driven`** | The visible OpenCode planning agent. It stays in plan mode and writes markdown artifacts only. |
+| **`/sdd-init`** | One-time repository bootstrap. Installs or merges the managed SDD scaffold. Runs in the build agent. |
+| **Internal SDD backend** | Repo-local workflow contract used automatically by `Spec Driven` to orchestrate the SDD phases. |
+| **`/implement`** | Build-mode execution command. Loads planning artifacts and executes `tasks.md`. |
+| **Managed assets** | The repository scaffold installed by init: `.opencode/`, `.specify/`, `specs/`, and `AGENTS.md`. |
+| **Compatibility wrappers** | `speckit.*` commands preserved for compatibility, but not required in the normal flow. |
+
+---
+
+## The Recommended User Flow
+
+The intended workflow is:
+
+```text
+configure plugin → /sdd-init → Spec Driven conversation → approve each phase → /implement
 ```
-install → /sdd-init → Spec Driven + /sdd → /implement
-```
 
-### Stage 1 — Install and Configure
+### Short version
 
-Install the plugin globally and add it to your OpenCode configuration.
+1. Add the plugin to OpenCode.
+2. In a new repository, run `/sdd-init` once using the build agent.
+3. Switch to `Spec Driven`.
+4. Describe the feature in natural language.
+5. Let the agent carry the workflow from spec to tasks.
+6. Approve each phase before it advances.
+7. Run `/implement` when the planning package is ready.
 
-```bash
-npm install -g @helldinhow/sdd-flow-opencode-plugin@latest
-```
+### Important UX principle
 
-Add it to your OpenCode config (`~/.config/opencode/opencode.json` or a project-level `opencode.json`):
+In the normal flow, the user should **not** need to keep typing:
+
+- `/speckit.specify`
+- `/speckit.clarify`
+- `/speckit.plan`
+- `/speckit.tasks`
+
+That sequencing is exactly what `sdd-flow` is trying to remove from the user's mental load.
+
+---
+
+## Installation
+
+Add the plugin to your OpenCode config:
 
 ```json
 {
@@ -52,140 +148,365 @@ Add it to your OpenCode config (`~/.config/opencode/opencode.json` or a project-
 }
 ```
 
-OpenCode installs npm plugins automatically at startup. No `npm install` inside the target repository is needed.
+You can place this in:
 
-### Stage 2 — One-Time Repository Bootstrap (`/sdd-init`)
+- `~/.config/opencode/opencode.json` for personal/global use
+- `opencode.json` inside a repository for project-level use
 
-**This step runs once per repository. Do not repeat it for each new feature.**
+OpenCode installs npm plugins automatically at startup.
 
-Open any repository in OpenCode, switch to the **build** agent, and run:
+---
 
-```
+## Step 1: Repository Bootstrap With `/sdd-init`
+
+`/sdd-init` is the one-time setup step for a repository.
+
+Run it with the **build** agent:
+
+```text
 /sdd-init
 ```
 
-`/sdd-init` uses the build agent because it needs write access to create the managed asset directories and files. It installs or merges the following into the target repository:
+### Why it runs in build mode
 
-- `.specify/` — workflow scripts, templates, and constitution storage
-- `.opencode/` — command surface and plugin runtime integration
-- `specs/` — feature workspace root
-- `AGENTS.md` — development guidelines for the repository
+Bootstrap needs write access because it creates and merges the repository scaffold.
 
-**Non-destructive by design.** If a file already exists, `/sdd-init` surfaces it for review instead of overwriting it. Your customizations are preserved.
+### What `/sdd-init` installs or merges
 
-After init completes, switch back to **Spec Driven** to start planning.
+- `.specify/`
+  - shell workflow scripts
+  - planning templates
+  - constitution storage
+- `.opencode/`
+  - command definitions
+  - plugin runtime files
+  - local OpenCode integration points
+- `specs/`
+  - feature workspace root
+- `AGENTS.md`
+  - repository development guidelines
 
-### Stage 3 — Plan with `Spec Driven` + `/sdd`
+### What happens during `/sdd-init`
 
-Once the repository is initialized, use **`Spec Driven`** as your conversational planning agent. It stays in plan mode and only writes markdown planning artifacts. All backend orchestration goes through `/sdd`.
+1. It creates the directory structure needed for SDD.
+2. It installs the workflow templates and shell backends.
+3. It installs the OpenCode command surface and plugin assets.
+4. It helps create the repository constitution.
+5. It verifies that the scaffold is usable.
 
-The full planning loop is:
+### Non-destructive behavior
 
-```
-Spec Driven + /sdd
-  ├── specify      → spec.md (user stories, acceptance criteria, requirements)
-  ├── clarify      → iterative Q&A to resolve ambiguity
-  ├── plan         → plan.md + research.md + data-model.md + quickstart.md
-  └── tasks        → tasks.md (phase-by-phase task breakdown)
-```
+`/sdd-init` is designed for brownfield repositories too.
 
-Each artifact lives in `specs/<branch-name>/`:
+When a managed file already exists, the init flow classifies it as:
 
-| Artifact | Purpose |
-|----------|---------|
-| `spec.md` | Feature specification with user stories and acceptance scenarios |
-| `plan.md` | Implementation plan with architecture, tech stack, and file structure |
-| `research.md` | Technical decisions, constraints, options considered, and rationale |
-| `data-model.md` | Entity definitions and data relationships (when applicable) |
-| `quickstart.md` | Quick verification commands and integration patterns |
-| `tasks.md` | Task breakdown organized by phase and user story |
+- **ADD**: safe to copy
+- **KEEP**: preserve as-is
+- **REVIEW**: existing file differs and should be reviewed instead of overwritten
 
-**Session-scoped workspace rule.** Every new `Spec Driven` session creates a fresh workspace under `specs/` by default. Resume an existing workspace only when you explicitly ask to continue a named feature or branch.
+This is one of the most important design decisions in the project: initialization should be safe, not destructive.
 
-### Stage 4 — Execute with `/implement`
+---
 
-When the planning package is complete, run:
+## Step 2: Plan Features With `Spec Driven`
 
-```
+After bootstrap, switch to the `Spec Driven` agent.
+
+From this point on, the intended user experience is conversational:
+
+> “I want to add X.”
+
+The `Spec Driven` agent uses the internal repo-local SDD backend automatically and carries the planning package through its phases.
+
+### What the user does
+
+- describe the feature
+- answer clarification questions when needed
+- review generated artifacts
+- explicitly approve each major phase before the workflow advances
+
+### What the agent does
+
+- creates the feature workspace
+- routes the workflow to the correct phase
+- writes the planning artifacts
+- keeps phase ordering correct
+- generates tasks automatically when planning is complete
+
+### Key behavior
+
+Every phase transition is approval-gated.
+
+That means:
+
+- `spec.md` is produced first
+- the workflow waits for approval
+- clarification happens only if needed
+- planning artifacts are created next
+- the workflow waits for approval again
+- `tasks.md` is generated after planning is complete
+
+The user stays in one conversation instead of having to remember which command to invoke next.
+
+---
+
+## What Happens In Each SDD Stage
+
+### 1. Specify
+
+The workflow converts the user's request into a proper feature specification.
+
+Primary output:
+
+- `spec.md`
+
+What goes into it:
+
+- user stories
+- acceptance criteria
+- functional requirements
+- edge cases
+- success criteria
+
+This stage answers:
+
+- What are we building?
+- Who is it for?
+- How do we know it is done?
+
+### 2. Clarify
+
+If the specification still has high-impact ambiguity, the workflow enters a clarification loop.
+
+What happens here:
+
+- the agent asks focused questions
+- answers are written back into the planning package
+- the flow does not move forward until ambiguity is resolved enough to plan safely
+
+This stage exists to prevent weak specs from becoming expensive implementation mistakes.
+
+### 3. Plan
+
+Once the spec is approved, the workflow creates the technical implementation package.
+
+Primary outputs:
+
+- `plan.md`
+- `research.md`
+- `data-model.md` when applicable
+- `quickstart.md`
+
+What goes into it:
+
+- architecture and file structure
+- technical decisions and rationale
+- data entities and relationships
+- implementation constraints
+- verification and usage patterns
+
+This stage answers:
+
+- How should we build it?
+- What tradeoffs did we choose?
+- What context will implementation need?
+
+### 4. Tasks
+
+When the planning package is complete and approved, the workflow generates `tasks.md`.
+
+Primary output:
+
+- `tasks.md`
+
+What goes into it:
+
+- phased task breakdown
+- user-story-oriented slices
+- dependency ordering
+- parallelizable work markers
+- implementation checkpoints
+
+This stage answers:
+
+- What exactly needs to be done?
+- In what order?
+- What can happen in parallel?
+
+### 5. Implement
+
+Execution begins only after the planning package is complete.
+
+Run:
+
+```text
 /implement
 ```
 
-`/implement` loads the planning artifacts and transitions to the **build** agent to execute the work described in `tasks.md`. It runs phase by phase, respects task dependencies and parallel markers (`[P]`), and marks completed tasks as `[X]` in the tasks file.
+`/implement` switches to the build agent, loads the planning artifacts, checks the active feature workspace, and starts execution from `tasks.md`.
+
+---
+
+## Files Generated By The Workflow
+
+Each feature gets its own workspace under:
+
+```text
+specs/<feature-branch>/
+```
+
+Typical generated files:
+
+| File | Meaning |
+|------|---------|
+| `spec.md` | Product and behavior definition |
+| `plan.md` | Technical implementation strategy |
+| `research.md` | Decisions, constraints, and rationale |
+| `data-model.md` | Entities and relationships when the feature needs them |
+| `quickstart.md` | Verification commands and usage examples |
+| `tasks.md` | Execution checklist for implementation |
+
+This artifact package is the main deliverable of the planning phase.
+
+---
+
+## How `/implement` Works
+
+`/implement` is the transition from planning to code execution.
+
+### What it does
+
+1. checks prerequisites and finds the active feature workspace
+2. requires `tasks.md`
+3. loads `plan.md`
+4. loads complementary artifacts when present
+5. moves into build-mode execution
+6. follows the task breakdown phase by phase
+
+### What it loads
+
+- `tasks.md` as the execution source of truth
+- `plan.md` as the technical reference
+- `research.md`, `data-model.md`, and `quickstart.md` when available
+
+### What it should do for the user
+
+The correct behavior of `/implement` is operational, not documentary.
+
+It should:
+
+- start implementation
+- report concrete blockers
+- use the planning package as context
+
+It should not:
+
+- explain the command markdown file
+- ask the user to manually reconstruct planning context
+- behave like a plain text prompt with no workflow state
 
 ---
 
 ## Workflow Guarantees
 
-### Artifact ordering and completeness
+### 1. Artifact ordering
 
-The [`sdd-artifact-guard` skill](.opencode/skills/sdd-artifact-guard/SKILL.md) is included with the plugin to enforce the SDD artifact creation contract:
+The workflow enforces a strict sequence:
 
-- **spec.md** must exist and be approved before **plan.md** is generated
-- **plan.md** must be complete before **tasks.md** is created
-- All complementary artifacts (**research.md**, **data-model.md**, **quickstart.md**) are produced alongside planning
-- No artifact is recreated if it already exists and is valid
+- spec before plan
+- plan before tasks
+- tasks before implementation
 
-This means the workflow produces a complete, traceable artifact set — not a loose collection of markdown files.
+### 2. Approval gates
 
-### Non-destructive initialization
+The workflow does not silently jump from one planning stage to the next.
 
-`/sdd-init` classifies every managed asset into one of three buckets:
+The user must approve the output before the next stage begins.
 
-- **ADD** — copy the file from the package bundle into the repository
-- **KEEP** — preserve the existing file (no change)
-- **REVIEW** — surface the file for manual decision (existing file differs from bundle)
+### 3. Session-scoped workspaces
 
-Your repository's existing customizations are never blindly overwritten.
+Each new `Spec Driven` session starts a fresh feature workspace by default.
 
-### Plan-mode only for planning
+Existing workspaces are resumed only when the user explicitly asks to continue one.
 
-`Spec Driven` is permission-restricted to markdown editing in `specs/**/*.md` and selected workflow shell scripts. It cannot author source code. The build agent (`/implement`) handles execution.
+### 4. Repo-owned artifacts
+
+The planning package lives in the repository, not in hidden agent state.
+
+That makes it:
+
+- reviewable
+- versionable
+- shareable
+- resilient to session changes
+
+### 5. Non-destructive bootstrap
+
+Initialization is safe for existing repositories and local customization.
 
 ---
 
-## Architecture and Code Map
+## Compatibility With `speckit.*`
 
-This section maps each user-facing claim to the files that implement it, so contributors can verify behavior directly.
+The project still ships compatibility wrappers:
 
-### Plugin registration and agent prompt
+- `/speckit.specify`
+- `/speckit.clarify`
+- `/speckit.plan`
+- `/speckit.tasks`
+- `/speckit.implement`
+- `/speckit.constitution`
 
-- `.opencode/src/plugin/spec-driven-agent.ts` — registers `Spec Driven` as a primary agent, injects the backend command template into chat, and enforces plan-mode permissions
+These exist to reduce migration friction and preserve familiar entrypoints.
 
-### Command templates (user-visible behavior)
+But the recommended workflow is:
 
-- `.opencode/command/sdd.md` — `/sdd` workflow entrypoint; routes between init, new planning, and resume; enforces session-scoped workspace rule
-- `.opencode/command/sdd-init.md` — `/sdd-init` bootstrap command; creates managed asset directories and constitution; runs in build mode
-- `.opencode/command/implement.md` — `/implement` execution command; loads artifacts and hands off to build agent
+- `Spec Driven` for planning
+- `/sdd-init` for bootstrap
+- `/implement` for execution
 
-### Workflow runtime
+---
 
-- `.opencode/src/workflow/phase-router.ts` — routes between `INIT`, `SPECIFY`, `CLARIFY`, `PLAN`, `TASKS`, `COMPLETE` based on repo and artifact state
-- `.opencode/src/workflow/orchestrate-planning.ts` — builds the command pipeline (`create-new-feature`, `setup-plan`, `check-prerequisites`) for the planning flow
-- `.opencode/src/workflow/run-guided-sdd.ts` — orchestrates the guided SDD loop
-- `.opencode/src/init/run-init.ts` — executes non-destructive asset merge using the add/keep/review classification
+## Architecture Map
 
-### Managed assets
+### User-facing command templates
 
-- `.opencode/managed-assets/` — the packaged bundle that is published to npm; must stay in sync with the authoring sources above
+- `.opencode/command/sdd.md` - internal planning backend contract used by `Spec Driven`
+- `.opencode/command/sdd-init.md`
+- `.opencode/command/implement.md`
 
-### Shell script backend primitives
+### Plugin runtime
 
-- `.specify/scripts/bash/check-prerequisites.sh` — detects repo state, active workspace, and artifact availability
-- `.specify/scripts/bash/create-new-feature.sh` — creates feature workspace, branch, and initial `spec.md` from template
-- `.specify/scripts/bash/setup-plan.sh` — copies the plan template and resolves feature paths
+- `.opencode/src/plugin/spec-driven-agent.ts`
+- `.opencode/src/plugin/index.ts`
+- `.opencode/src/plugin/command-registry.ts`
 
-### Artifact templates
+### Workflow orchestration
 
-- `.specify/templates/spec-template.md`
-- `.specify/templates/plan-template.md`
-- `.specify/templates/tasks-template.md`
-- `.specify/templates/constitution-template.md`
+- `.opencode/src/workflow/phase-router.ts`
+- `.opencode/src/workflow/orchestrate-planning.ts`
+- `.opencode/src/workflow/run-guided-sdd.ts`
+- `.opencode/src/workflow/context-loader.ts`
+
+### Repository initialization
+
+- `.opencode/src/init/run-init.ts`
+- `.opencode/src/init/merge-managed-assets.ts`
+- `.opencode/src/init/managed-assets.ts`
+
+### Managed bundle published to npm
+
+- `.opencode/managed-assets/`
+
+### Shell backends
+
+- `.specify/scripts/bash/check-prerequisites.sh`
+- `.specify/scripts/bash/create-new-feature.sh`
+- `.specify/scripts/bash/setup-plan.sh`
 
 ---
 
 ## Local Development
-
-Clone the repository and open it in OpenCode:
 
 ```bash
 git clone https://github.com/Heldinhow/sdd-flow.git
@@ -193,103 +514,55 @@ cd sdd-flow
 opencode .
 ```
 
-OpenCode auto-loads `.opencode/plugins/sdd.ts`. Select **`Spec Driven`** to start working on the plugin itself.
+OpenCode auto-loads `.opencode/plugins/sdd.ts` for local development.
 
-If dependencies are not installed automatically on first load:
+If dependencies are missing:
 
 ```bash
 cd .opencode && bun install
 ```
 
-### Keeping managed assets in sync
-
-The bundle in `.opencode/managed-assets/` is what gets published to npm. The authoring sources are the files listed in the architecture map above. Before publishing a new version, sync the bundle:
+### Validation
 
 ```bash
-cp .opencode/command/*.md .opencode/managed-assets/.opencode/command/
-cp .specify/scripts/bash/*.sh .opencode/managed-assets/.specify/scripts/bash/
-cp -r .specify/templates/* .opencode/managed-assets/.specify/templates/
-cp .specify/memory/* .opencode/managed-assets/.specify/memory/
-cp AGENTS.md .opencode/managed-assets/AGENTS.md
-```
-
-### Verification commands
-
-```bash
-# Type-check
 cd .opencode && bunx tsc --noEmit
-
-# Run tests
 cd .opencode && bun test
-
-# Full prepublish check (typecheck + tests + packaging)
 cd .opencode && bun run prepublishOnly
 ```
 
 ---
 
-## Compatibility Wrappers
-
-The plugin preserves compatibility with the existing `speckit.*` command surface:
-
-- `/speckit.specify` — wraps `/sdd` for spec creation
-- `/speckit.clarify` — handles clarification loop
-- `/speckit.plan` — generates the planning package
-- `/speckit.tasks` — produces the task breakdown
-- `/speckit.implement` — wraps `/implement`
-- `/speckit.constitution` — interactive constitution creation
-
-These are provided for environments that already use Speckit-style commands. The primary user-facing entrypoint remains **`Spec Driven`**.
-
----
-
-## Why This Exists
-
-Spec-Driven Development means letting a structured artifact set drive implementation: specs before code, plan before tasks, tasks before execution. The workflow produces markdown files you own, can audit, and can version alongside your code.
-
-`sdd-flow` brings this model to OpenCode by:
-
-- exposing one visible agent (`Spec Driven`) that stays in plan mode and only authors markdown
-- providing a repo-local backend (`/sdd`) that orchestrates the planning loop without requiring external services
-- installing a managed asset scaffold that any developer can adopt without scaffolding a new repo from scratch
-- enforcing artifact ordering and completeness through the `sdd-artifact-guard` skill
-- making the bootstrap process non-destructive so existing repositories are safe to initialize
-
-It is not a replacement for Spec Kit or OpenSpec — it is an implementation of SDD principles adapted for OpenCode's agent model.
-
----
-
 ## Contributing
 
-Contributions are welcome. When contributing:
+When changing workflow behavior:
 
-1. All behavioral changes must be reflected in the command templates (`.opencode/command/*.md`) **and** the managed assets bundle (`.opencode/managed-assets/`)
-2. Run `bunx tsc --noEmit` and `bun test` before opening a pull request
-3. The `sdd-artifact-guard` skill must not be broken by any change to the artifact creation flow
-4. New commands should follow the existing frontmatter format with `handoffs` declaring the execution agent
+1. update the authoring source in `.opencode/command/` or `.opencode/src/`
+2. keep `.opencode/managed-assets/` aligned with what is published
+3. run typecheck and tests before opening a PR
+4. preserve the non-destructive init behavior
+5. preserve the approval-gated planning flow
 
 ---
 
 ## Project Layout
 
-```
+```text
 sdd-flow/
 ├── .opencode/
 │   ├── command/              # Authoring source for /sdd, /sdd-init, /implement, speckit.*
-│   ├── managed-assets/       # Synced bundle published to npm
+│   ├── managed-assets/       # Bundle published to npm
 │   ├── plugin/               # Package export entry
-│   ├── plugins/              # Local development loader
+│   ├── plugins/              # Local OpenCode loader
 │   ├── src/
-│   │   ├── init/             # Non-destructive asset merge runtime
-│   │   ├── plugin/           # Agent registration and template injection
-│   │   └── workflow/         # Phase routing, orchestration, resume logic
+│   │   ├── init/             # Non-destructive bootstrap runtime
+│   │   ├── plugin/           # Agent and command registration
+│   │   └── workflow/         # Phase routing and planning orchestration
 │   └── tests/                # Unit and integration tests
 ├── .specify/
-│   ├── scripts/bash/         # Workflow shell scripts (check-prerequisites, create-new-feature, setup-plan)
-│   ├── templates/            # Artifact templates (spec, plan, tasks, constitution)
+│   ├── scripts/bash/         # Shell workflow backends
+│   ├── templates/            # Artifact templates
 │   └── memory/               # Constitution storage
-├── specs/                    # Feature workspaces created by the workflow
-├── .claude/                  # Napkin runbook and session notes
-├── AGENTS.md                 # Development guidelines
+├── specs/                    # Feature workspaces
+├── AGENTS.md                 # Repository development guidance
 └── README.md
 ```

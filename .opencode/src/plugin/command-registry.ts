@@ -29,6 +29,7 @@ interface CommandEntry {
 
 const COMMANDS_DIR = [".opencode", "command"] as const;
 const BUNDLE_COMMANDS_PATH = ["managed-assets", ".opencode", "command"] as const;
+const INTERNAL_ONLY_COMMANDS = new Set(["sdd"]);
 
 function resolvePackageRoot(): string {
   return path.resolve(fileURLToPath(import.meta.url), "..", "..", "..");
@@ -183,6 +184,10 @@ function registerCommands(config: Config, projectRoot: string): void {
   config.command ??= {};
 
   for (const [name, entry] of commands) {
+    if (INTERNAL_ONLY_COMMANDS.has(name)) {
+      continue;
+    }
+
     config.command[name] = {
       template: entry.template,
       description: entry.description,

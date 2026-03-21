@@ -240,6 +240,7 @@ description: SDD command
       registerCommands(config, testRoot);
 
       expect(config.command).toBeDefined();
+      expect(config.command?.["sdd"]).toBeUndefined();
       expect(config.command?.["sdd-init"]).toBeDefined();
       expect(config.command?.["sdd-init"]?.template).toContain("## User Input");
       expect(config.command?.["sdd-init"]?.template).not.toContain(".opencode/command/sdd-init.md");

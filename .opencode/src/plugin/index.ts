@@ -43,7 +43,7 @@ function buildSystemContext(projectRoot: string): string[] {
   return [
     `Repository-local SDD workflow root: ${projectRoot}`,
     "Use Spec Driven as the user-facing SDD entrypoint.",
-    "Use /sdd as the primary workflow backend.",
+    "Use the internal repo-local SDD backend automatically rather than exposing it as a user-facing command.",
     `Preferred branch prefixes: ${BRANCH_PREFIX_VALUES.join(", ")}.`,
   ];
 }
