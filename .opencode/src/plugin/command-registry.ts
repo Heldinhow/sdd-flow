@@ -10,6 +10,7 @@ export interface CommandScripts {
 
 interface CommandFrontmatter {
   description?: string;
+  agent?: string;
   handoffs?: Array<{
     label: string;
     agent: string;
@@ -20,6 +21,7 @@ interface CommandFrontmatter {
 
 interface CommandEntry {
   template: string;
+  filePath: string;
   description?: string;
   agent?: string;
   scripts?: CommandScripts;
@@ -52,6 +54,11 @@ function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
   const descriptionMatch = frontmatterText.match(/^description:\s*(.+)$/m);
   if (descriptionMatch) {
     result.description = descriptionMatch[1].trim();
+  }
+
+  const agentMatch = frontmatterText.match(/^agent:\s*(.+)$/m);
+  if (agentMatch) {
+    result.agent = agentMatch[1].trim();
   }
 
   const handoffsMatch = frontmatterText.match(/^handoffs:\s*\n((?:[ \t]+-[^\n]*(?:\n[ \t]+[^\n]+)*\n?)*)/m);
@@ -131,14 +138,19 @@ function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
 
     const frontmatter = parseYamlFrontmatter(content);
     const entry: CommandEntry = {
-      template: path.join(...COMMANDS_DIR, file),
+      template: filePath,
+      filePath,
     };
 
     if (frontmatter?.description) {
       entry.description = frontmatter.description;
     }
 
-    if (frontmatter?.handoffs && frontmatter.handoffs.length > 0) {
+    if (frontmatter?.agent) {
+      entry.agent = frontmatter.agent;
+    }
+
+    if (!entry.agent && frontmatter?.handoffs && frontmatter.handoffs.length > 0) {
       entry.agent = frontmatter.handoffs[0].agent;
     }
 
@@ -166,7 +178,6 @@ function registerCommands(config: Config, projectRoot: string): void {
       template: entry.template,
       description: entry.description,
       agent: entry.agent,
-      scripts: entry.scripts,
     } as never;
   }
 }

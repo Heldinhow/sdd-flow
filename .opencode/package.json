@@ -1,6 +1,6 @@
 {
   "name": "@helldinhow/sdd-flow-opencode-plugin",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "OpenCode Spec-Driven Development workflow plugin and bootstrap kit",
   "homepage": "https://github.com/Heldinhow/sdd-flow#readme",
   "repository": {

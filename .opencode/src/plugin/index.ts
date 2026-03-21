@@ -48,9 +48,24 @@ function buildSystemContext(projectRoot: string): string[] {
   ];
 }
 
+function buildSyntheticPartIds(sessionID: string, commandName: string): { id: string; messageID: string } {
+  const slug = commandName.replace(/[^a-zA-Z0-9._-]/g, "-");
+
+  return {
+    id: `prt-${sessionID}-${slug}-prescript`,
+    messageID: `msg-${sessionID}-${slug}-prescript`,
+  };
+}
+
 const sddPlugin: Plugin = async (input) => {
   const projectRoot = resolveProjectRoot(input);
   const repoInitialized = hasSddMarkers(projectRoot);
+  const runner = new PreScriptRunner((name) => {
+    const commands = discoverCommands(projectRoot);
+    const entry = commands.get(name);
+
+    return entry?.scripts ?? null;
+  });
 
   return {
     async config(config) {
@@ -74,38 +89,23 @@ const sddPlugin: Plugin = async (input) => {
         return;
       }
 
-      const messageText = output.parts
-        .filter((part): part is Extract<typeof output.parts[number], { type: "text" }> => part.type === "text")
-        .map((part) => part.text)
-        .join("\n")
-        .trim();
-
-      if (messageText.startsWith("/")) {
-        const commandName = messageText.slice(1).split(/\s/).at(0) ?? "";
-        if (commandName) {
-          const commands = discoverCommands(projectRoot);
-          const entry = commands.get(commandName);
-          if (entry?.scripts?.sh) {
-            const runner = new PreScriptRunner((name) => {
-              const cmd = commands.get(name);
-              return cmd?.scripts ?? null;
-            });
-            const result = await runner.runIfNeeded(commandName, projectRoot);
-            if (result) {
-              output.parts.unshift({
-                id: `prt-${output.message.id}-prescript`,
-                sessionID: output.message.sessionID,
-                messageID: output.message.id,
-                type: "text",
-                synthetic: true,
-                text: result.formattedOutput,
-              });
-            }
-          }
-        }
+      injectSddBackendTemplate(projectRoot, output);
+    },
+    async "command.execute.before"(input, output) {
+      const result = await runner.runIfNeeded(input.command, projectRoot);
+      if (!result) {
+        return;
       }
 
-      injectSddBackendTemplate(projectRoot, output);
+      const ids = buildSyntheticPartIds(input.sessionID, input.command);
+      output.parts.unshift({
+        id: ids.id,
+        sessionID: input.sessionID,
+        messageID: ids.messageID,
+        type: "text",
+        synthetic: true,
+        text: result.formattedOutput,
+      });
     },
     async "experimental.chat.system.transform"(_event, output) {
       if (!repoInitialized) {
