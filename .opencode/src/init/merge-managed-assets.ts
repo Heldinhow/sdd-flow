@@ -34,8 +34,8 @@ function createMergePlan(targetRoot: string, managedAssets: ManagedAsset[]): Mer
       };
     }
 
-    const sourceContents = readFileSync(asset.sourcePath, "utf8");
-    const targetContents = readFileSync(targetPath, "utf8");
+    const sourceContents = readFileSync(asset.sourcePath, "utf8").replace(/\r\n/g, "\n");
+    const targetContents = readFileSync(targetPath, "utf8").replace(/\r\n/g, "\n");
     return {
       action: sourceContents === targetContents ? MERGE_ACTION.KEEP : MERGE_ACTION.REVIEW,
       relativePath: asset.relativePath,
