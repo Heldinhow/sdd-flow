@@ -14,6 +14,23 @@ function getCurrentBranch(): string | null {
   }
 }
 
+function getWorkspaceLastCommitTimestamp(repoRoot: string, workspace: string): number {
+  try {
+    const workspacePath = path.join(repoRoot, "specs", workspace);
+    const timestamp = execSync(
+      `git log -1 --format=%ct -- "${workspacePath}"`,
+      {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "ignore"],
+        cwd: repoRoot,
+      },
+    ).trim();
+    return timestamp ? parseInt(timestamp, 10) * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function detectActiveWorkspace(repoRoot: string): string | null {
   const specsRoot = path.join(repoRoot, "specs");
 
@@ -25,20 +42,19 @@ function detectActiveWorkspace(repoRoot: string): string | null {
       return null;
     }
 
-    // Try to match current git branch to a workspace directory name
     const currentBranch = getCurrentBranch();
     if (currentBranch && currentBranch !== "HEAD" && entries.includes(currentBranch)) {
       return currentBranch;
     }
 
-    // Fallback: return the most recently modified workspace
     const sorted = entries.sort((left, right) => {
-      const leftPath = path.join(specsRoot, left);
-      const rightPath = path.join(specsRoot, right);
-      return statSync(leftPath).mtimeMs - statSync(rightPath).mtimeMs;
+      const leftTs = getWorkspaceLastCommitTimestamp(repoRoot, left);
+      const rightTs = getWorkspaceLastCommitTimestamp(repoRoot, right);
+      return leftTs - rightTs;
     });
 
-    return sorted.at(-1) ?? null;
+    const lastModified = sorted.find((entry) => getWorkspaceLastCommitTimestamp(repoRoot, entry) > 0);
+    return lastModified ?? null;
   } catch {
     return null;
   }
