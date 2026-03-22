@@ -88,7 +88,7 @@ function registerSpecDrivenAgent(config: PluginConfigInput, prompt: string): voi
       },
       webfetch: "ask",
     },
-  } as never;
+  } as unknown as Record<string, unknown>;
 }
 
 function loadSddTemplate(projectRoot: string): string | null {

@@ -28,6 +28,14 @@ interface CommandEntry {
   scripts?: CommandScripts;
 }
 
+interface CommandConfigEntry {
+  template: string;
+  description?: string;
+  agent?: string;
+  model?: string;
+  subtask?: boolean;
+}
+
 const COMMANDS_DIR = [".opencode", "command"] as const;
 const BUNDLE_COMMANDS_PATH = ["managed-assets", ".opencode", "command"] as const;
 const INTERNAL_ONLY_COMMANDS = new Set(["sdd"]);
@@ -186,7 +194,7 @@ function registerCommands(config: Config, projectRoot: string): void {
       template: entry.template,
       description: entry.description,
       agent: entry.agent,
-    } as never;
+    } as unknown as CommandConfigEntry;
   }
 }
 
