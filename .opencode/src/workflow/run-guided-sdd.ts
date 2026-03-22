@@ -1,14 +1,16 @@
 import { determineNextPhase, getNextRecommendation } from "./phase-router";
 import { loadWorkflowContext } from "./context-loader";
 import { resumeFlow } from "./resume-flow";
-import { runClarifyLoop } from "./run-clarify-loop";
+import { runClarifyLoop, type ClarifyLoopResult } from "./run-clarify-loop";
 import { type WorkflowPhase } from "./session-state";
+import { type ClarificationAnswer } from "./apply-clarifications";
 
 interface RunGuidedSddInput {
   repoRoot: string;
   activeFeature?: string;
   hasOutstandingClarifications?: boolean;
   clarificationContent?: string;
+  clarificationAnswers?: ClarificationAnswer[];
   specApproved?: boolean;
   planApproved?: boolean;
 }
@@ -33,11 +35,13 @@ function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
   });
 
   const clarificationResult = input.clarificationContent
-    ? runClarifyLoop(input.clarificationContent)
+    ? runClarifyLoop(input.clarificationContent, input.clarificationAnswers)
     : null;
   const hasOutstandingClarifications = clarificationResult
     ? clarificationResult.phase === "clarify"
     : (input.hasOutstandingClarifications ?? false);
+
+  const hasResumeIntent = !!input.activeFeature;
 
   const phase = determineNextPhase({
     repoInitialized: context.repoInitialized,
@@ -47,7 +51,7 @@ function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
     specApproved: input.specApproved ?? false,
     planApproved: input.planApproved ?? false,
     hasOutstandingClarifications,
-    hasResumeIntent: true,
+    hasResumeIntent,
   });
 
   return {
