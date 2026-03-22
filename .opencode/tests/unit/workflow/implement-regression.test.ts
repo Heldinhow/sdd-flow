@@ -7,9 +7,10 @@ import { discoverCommands } from "../../../src/plugin/command-registry";
 import { loadWorkflowContext } from "../../../src/workflow/context-loader";
 
 describe("implement command regression", () => {
+  const commands = discoverCommands(process.cwd());
+
   describe("US1: /implement retains execution metadata", () => {
     it("implement command has build agent", () => {
-      const commands = discoverCommands(process.cwd());
       const entry = commands.get("implement");
 
       expect(entry).toBeDefined();
@@ -17,7 +18,6 @@ describe("implement command regression", () => {
     });
 
     it("implement command has scripts metadata with prerequisite check", () => {
-      const commands = discoverCommands(process.cwd());
       const entry = commands.get("implement");
 
       expect(entry).toBeDefined();
@@ -27,7 +27,6 @@ describe("implement command regression", () => {
     });
 
     it("implement command has description referencing tasks.md execution", () => {
-      const commands = discoverCommands(process.cwd());
       const entry = commands.get("implement");
 
       expect(entry).toBeDefined();
@@ -35,7 +34,6 @@ describe("implement command regression", () => {
     });
 
     it("speckit.implement command also has scripts metadata", () => {
-      const commands = discoverCommands(process.cwd());
       const entry = commands.get("speckit.implement");
 
       expect(entry).toBeDefined();
