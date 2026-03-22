@@ -73,8 +73,8 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
       specExists: context.artifacts.specExists,
       planExists: context.artifacts.planExists,
       tasksExists: context.artifacts.tasksExists,
-      specApproved: false,
-      planApproved: false,
+      specApproved: context.specApproved,
+      planApproved: context.planApproved,
     });
 
     return {
@@ -92,8 +92,8 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
     specExists: context.artifacts.specExists,
     planExists: context.artifacts.planExists,
     tasksExists: context.artifacts.tasksExists,
-    specApproved: false,
-    planApproved: false,
+    specApproved: context.specApproved,
+    planApproved: context.planApproved,
   });
 
   return {
