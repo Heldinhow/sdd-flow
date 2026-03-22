@@ -61,7 +61,7 @@ describe("clarify and resume workflows", () => {
     expect(evaluation.phase).toBe(WORKFLOW_PHASE.WAITING_PLAN_APPROVAL);
   });
 
-  it("resumes conservatively to waiting_spec_approval when spec exists but approval state is unknown", () => {
+  it("resumes conservatively to spec_review when spec exists but approval state is unknown", () => {
     const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-resume-"));
     const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
     mkdirSync(path.join(repoRoot, ".specify"));
@@ -72,8 +72,8 @@ describe("clarify and resume workflows", () => {
     const result = resumeFlow({ repoRoot, hasResumeIntent: true });
 
     expect(result.activeFeature).toBe("feat-opencode-sdd-agent");
-    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
-    expect(result.nextRecommendation).toContain("approve");
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
+    expect(result.nextRecommendation).toContain("quality");
   });
 
   it("does not auto-resume without explicit resume intent", () => {

@@ -90,12 +90,12 @@ describe("approval state persistence", () => {
     expect(result.phase).toBe(WORKFLOW_PHASE.TASKS);
   });
 
-  it("resumes with waiting_spec_approval when spec is not approved", () => {
+  it("resumes with spec_review when spec is not approved", () => {
     const result = resumeFlow({
       repoRoot,
       activeFeature: "feat-test-feature",
     });
 
-    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
   });
 });

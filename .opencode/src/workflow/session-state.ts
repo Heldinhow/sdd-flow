@@ -1,6 +1,7 @@
 const WORKFLOW_PHASE = {
   INIT: "init",
   SPECIFY: "specify",
+  SPEC_REVIEW: "spec_review",
   WAITING_SPEC_APPROVAL: "waiting_spec_approval",
   CLARIFY: "clarify",
   PLAN: "plan",

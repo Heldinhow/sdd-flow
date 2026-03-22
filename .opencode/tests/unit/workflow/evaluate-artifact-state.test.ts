@@ -47,7 +47,7 @@ describe("evaluate-artifact-state", () => {
     expect(result.nextRecommendation).toContain("clarification");
   });
 
-  it("routes to WAITING_SPEC_APPROVAL when spec exists but not approved", () => {
+  it("routes to SPEC_REVIEW when spec exists but not approved", () => {
     const result = evaluateArtifactState({
       repoInitialized: true,
       specExists: true,
@@ -57,8 +57,8 @@ describe("evaluate-artifact-state", () => {
       planApproved: false,
     });
 
-    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
-    expect(result.nextRecommendation).toContain("approve");
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
+    expect(result.nextRecommendation).toContain("quality");
   });
 
   it("routes to PLAN when spec is approved but plan does not exist", () => {
@@ -127,7 +127,7 @@ describe("evaluate-artifact-state", () => {
       planApproved: false,
     });
 
-    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
   });
 
   it("defaults hasResumeIntent to false", () => {

@@ -14,7 +14,8 @@ function determineNextPhase(input: WorkflowRouteInput): WorkflowPhase {
   }
 
   if (input.specExists && !input.specApproved) {
-    return WORKFLOW_PHASE.WAITING_SPEC_APPROVAL;
+    // Run spec review before waiting for approval
+    return WORKFLOW_PHASE.SPEC_REVIEW;
   }
 
   if (!input.planExists) {
@@ -38,6 +39,8 @@ function getNextRecommendation(phase: WorkflowPhase): string {
       return "Run the repository initialization flow before starting feature planning.";
     case WORKFLOW_PHASE.SPECIFY:
       return "Create or update spec.md for the active feature request.";
+    case WORKFLOW_PHASE.SPEC_REVIEW:
+      return "Run automatic spec quality review to check acceptance criteria, user stories, and completeness.";
     case WORKFLOW_PHASE.WAITING_SPEC_APPROVAL:
       return "Review and approve spec.md to unlock the planning stage.";
     case WORKFLOW_PHASE.CLARIFY:

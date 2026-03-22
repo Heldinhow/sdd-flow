@@ -79,7 +79,7 @@ describe("phase router", () => {
     ).toBe(WORKFLOW_PHASE.SPECIFY);
   });
 
-  it("routes to waiting_spec_approval when spec exists but is not approved", () => {
+  it("routes to spec_review when spec exists but is not approved", () => {
     expect(
       determineNextPhase({
         repoInitialized: true,
@@ -91,7 +91,7 @@ describe("phase router", () => {
         hasOutstandingClarifications: false,
         hasResumeIntent: true,
       }),
-    ).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
+    ).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
   });
 
   it("routes to plan when spec is approved and plan does not exist", () => {

@@ -12,6 +12,7 @@ const REQUIRED_COMMANDS = [
   "sdd-init.md",
   "implement.md",
   "speckit.analyze.md",
+  "speckit.analyze-spec.md",
   "speckit.checklist.md",
   "speckit.clarify.md",
   "speckit.constitution.md",
@@ -110,10 +111,10 @@ describe("packaging verification", () => {
   });
 
   describe("bundle command count matches expected SDD command set", () => {
-    it("discovers exactly 14 command files from the bundle", () => {
+    it("discovers exactly 15 command files from the bundle", () => {
       const cmdDir = path.join(bundleRoot, ".opencode", "command");
       const files = readdirSync(cmdDir).filter((f) => f.endsWith(".md"));
-      expect(files.length).toBe(14);
+      expect(files.length).toBe(15);
     });
   });
 
