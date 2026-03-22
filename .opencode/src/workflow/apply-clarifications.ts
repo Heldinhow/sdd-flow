@@ -8,7 +8,7 @@ function applyClarifications(content: string, answers: ClarificationAnswer[], se
 
   for (const answer of answers) {
     const marker = `[NEEDS CLARIFICATION: ${answer.question}]`;
-    updatedContent = updatedContent.replace(marker, answer.answer);
+    updatedContent = updatedContent.replaceAll(marker, answer.answer);
   }
 
   if (answers.length === 0) {
