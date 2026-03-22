@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 import type { Config } from "@opencode-ai/sdk";
 
@@ -50,71 +51,64 @@ function parseYamlFrontmatter(content: string): CommandFrontmatter | null {
   }
 
   const frontmatterText = frontmatterMatch[1];
-  const result: CommandFrontmatter = {};
 
-  const descriptionMatch = frontmatterText.match(/^description:\s*(.+)$/m);
-  if (descriptionMatch) {
-    result.description = descriptionMatch[1].trim();
-  }
+  try {
+    const parsed = parseYaml(frontmatterText);
 
-  const agentMatch = frontmatterText.match(/^agent:\s*(.+)$/m);
-  if (agentMatch) {
-    result.agent = agentMatch[1].trim();
-  }
+    if (typeof parsed !== "object" || parsed === null) {
+      return null;
+    }
 
-  const handoffsMatch = frontmatterText.match(/^handoffs:\s*\n((?:[ \t]+-[^\n]*(?:\n[ \t]+[^\n]+)*\n?)*)/m);
-  if (handoffsMatch) {
-    const handoffsBlock = handoffsMatch[1];
-    const handoffEntries = handoffsBlock.split(/^(?=\s+-\s)/m);
+    const result: CommandFrontmatter = {};
 
-    const handoffs: Array<{ agent: string; label?: string }> = [];
+    if (typeof parsed.description === "string") {
+      result.description = parsed.description;
+    }
 
-    for (const entry of handoffEntries) {
-      if (!entry.trim()) continue;
+    if (typeof parsed.agent === "string") {
+      result.agent = parsed.agent;
+    }
 
-      const lines = entry.split("\n").filter((l) => l.trim());
-      const currentHandoff: { agent?: string; label?: string } = {};
+    if (Array.isArray(parsed.handoffs)) {
+      const handoffs: Array<{ agent: string; label?: string }> = [];
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-
-        if (trimmed.startsWith("- label:")) {
-          const labelMatch = trimmed.match(/label:\s*(.+)/);
-          if (labelMatch) {
-            currentHandoff.label = labelMatch[1].trim();
-          }
-        } else if (trimmed.startsWith("agent:")) {
-          const agentMatch = trimmed.match(/agent:\s*(.+)/);
-          if (agentMatch) {
-            currentHandoff.agent = agentMatch[1].trim();
-          }
+      for (const handoff of parsed.handoffs) {
+        if (typeof handoff !== "object" || handoff === null) {
+          continue;
         }
+
+        if (typeof handoff.agent !== "string") {
+          continue;
+        }
+
+        handoffs.push({
+          agent: handoff.agent,
+          label: typeof handoff.label === "string" ? handoff.label : undefined,
+        });
       }
 
-      if (currentHandoff.agent) {
-        handoffs.push(currentHandoff as { agent: string });
+      if (handoffs.length > 0) {
+        result.handoffs = handoffs as CommandFrontmatter["handoffs"];
       }
     }
 
-    if (handoffs.length > 0) {
-      result.handoffs = handoffs as CommandFrontmatter["handoffs"];
-    }
-  }
+    if (typeof parsed.scripts === "object" && parsed.scripts !== null) {
+      const scripts: CommandScripts = {};
 
-  const scriptsMatch = frontmatterText.match(/^scripts:\s*\n((?:[ \t]+[^\n]*(?:\n[ \t]+[^\n]+)*\n?)*)/m);
-  if (scriptsMatch) {
-    const scriptsBlock = scriptsMatch[1];
-    const scripts: CommandScripts = {};
-    const shMatch = scriptsBlock.match(/sh:\s*(.+)/m);
-    if (shMatch) {
-      scripts.sh = shMatch[1].trim();
-    }
-    if (Object.keys(scripts).length > 0) {
-      result.scripts = scripts;
-    }
-  }
+      if (typeof parsed.scripts.sh === "string") {
+        scripts.sh = parsed.scripts.sh;
+      }
 
-  return result;
+      if (Object.keys(scripts).length > 0) {
+        result.scripts = scripts;
+      }
+    }
+
+    return result;
+  } catch {
+    // Fall back to null on parse failure — preserves old behavior
+    return null;
+  }
 }
 
 function extractTemplateContent(content: string): string {
