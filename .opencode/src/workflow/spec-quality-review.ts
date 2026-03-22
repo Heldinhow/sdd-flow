@@ -298,9 +298,17 @@ function countMissingField(content: string, fieldName: string): number {
   const storyMatches = content.match(storyPattern) || [];
   let count = 0;
 
-  for (const _ of storyMatches) {
-    // Find the position after this user story header
-    // Simple approach: count stories without the field
+  // Split content by user story headers
+  const parts = content.split(storyPattern);
+
+  // parts[0] is content before first user story, parts[1+] are between headers
+  // We need to check each story block (parts[i] for i >= 1)
+  for (let i = 1; i < parts.length; i++) {
+    const storyContent = parts[i];
+    // Check if this story block contains the field
+    if (!storyContent.includes(fieldName)) {
+      count++;
+    }
   }
 
   return count;
