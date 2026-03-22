@@ -4,6 +4,7 @@ import path from "node:path";
 import { detectActiveWorkspace } from "./detect-active-workspace";
 import { evaluateArtifactState } from "./evaluate-artifact-state";
 import { loadWorkflowContext } from "./context-loader";
+import { loadFeatureApproval } from "./approval-state";
 import { type WorkflowPhase } from "./session-state";
 
 interface ResumeFlowInput {
@@ -68,13 +69,14 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
     }
 
     const context = loadWorkflowContext({ repoRoot: input.repoRoot, activeFeature: detected });
+    const savedApproval = loadFeatureApproval(input.repoRoot, detected);
     const evaluation = evaluateArtifactState({
       repoInitialized: context.repoInitialized,
       specExists: context.artifacts.specExists,
       planExists: context.artifacts.planExists,
       tasksExists: context.artifacts.tasksExists,
-      specApproved: false,
-      planApproved: false,
+      specApproved: savedApproval.specApproved,
+      planApproved: savedApproval.planApproved,
     });
 
     return {
@@ -87,13 +89,14 @@ function resumeFlow(input: ResumeFlowInput): ResumeFlowResult {
   }
 
   const context = loadWorkflowContext({ repoRoot: input.repoRoot, activeFeature: input.activeFeature });
+  const savedApproval = loadFeatureApproval(input.repoRoot, input.activeFeature);
   const evaluation = evaluateArtifactState({
     repoInitialized: context.repoInitialized,
     specExists: context.artifacts.specExists,
     planExists: context.artifacts.planExists,
     tasksExists: context.artifacts.tasksExists,
-    specApproved: false,
-    planApproved: false,
+    specApproved: savedApproval.specApproved,
+    planApproved: savedApproval.planApproved,
   });
 
   return {
