@@ -117,6 +117,9 @@ Run this command.`);
   });
 
   describe("discoverCommands", () => {
+    // Call discoverCommands once at the top and reuse for tests that need process.cwd()
+    const cwdCommands = discoverCommands(process.cwd());
+
     it("discovers .md files in command directory", () => {
       const testRoot = path.join(tmpdir(), "sdd-command-test-" + Date.now());
       rmSync(testRoot, { recursive: true, force: true });
@@ -182,25 +185,19 @@ handoffs:
     });
 
     it("resolves sdd-init command to build agent", () => {
-      const commands = discoverCommands(process.cwd());
-
-      const entry = commands.get("sdd-init");
+      const entry = cwdCommands.get("sdd-init");
       expect(entry).toBeDefined();
       expect(entry!.agent).toBe("build");
     });
 
     it("resolves implement command to build agent", () => {
-      const commands = discoverCommands(process.cwd());
-
-      const entry = commands.get("implement");
+      const entry = cwdCommands.get("implement");
       expect(entry).toBeDefined();
       expect(entry!.agent).toBe("build");
     });
 
     it("resolves implement command has scripts metadata", () => {
-      const commands = discoverCommands(process.cwd());
-
-      const entry = commands.get("implement");
+      const entry = cwdCommands.get("implement");
       expect(entry).toBeDefined();
       expect(entry!.scripts).toBeDefined();
       expect(entry!.scripts!.sh).toContain("check-prerequisites.sh");
