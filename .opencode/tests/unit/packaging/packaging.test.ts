@@ -110,10 +110,10 @@ describe("packaging verification", () => {
   });
 
   describe("bundle command count matches expected SDD command set", () => {
-    it("discovers exactly 12 command files from the bundle", () => {
+    it("discovers exactly 14 command files from the bundle", () => {
       const cmdDir = path.join(bundleRoot, ".opencode", "command");
       const files = readdirSync(cmdDir).filter((f) => f.endsWith(".md"));
-      expect(files.length).toBe(12);
+      expect(files.length).toBe(14);
     });
   });
 
