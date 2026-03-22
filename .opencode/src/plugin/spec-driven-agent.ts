@@ -116,6 +116,30 @@ function injectSddBackendTemplate(projectRoot: string, output: ChatMessageOutput
 
   const template = loadSddTemplate(projectRoot);
   if (!template) {
+    const templatePath = path.join(projectRoot, ...SDD_COMMAND_PATH);
+    const errorMessage = [
+      "⚠️ **SDD Backend Template Missing**",
+      "",
+      `The SDD backend template is required but not found at: ${templatePath}`,
+      "",
+      "The Spec Driven agent will operate without critical SDD workflow orchestration instructions.",
+      "",
+      "**To fix this:**",
+      "1. Run \`/sdd-init\` in the build agent to initialize the repository",
+      "2. This will create the required `.opencode/command/sdd.md` template",
+      "3. Then return to Spec Driven for proper workflow guidance",
+    ].join("\n");
+
+    console.warn(`[SDD Plugin] Template not found at ${templatePath}`);
+
+    output.parts.unshift({
+      id: `prt-${output.message.id}-sdd-template-missing`,
+      sessionID: output.message.sessionID,
+      messageID: output.message.id,
+      type: "text",
+      synthetic: true,
+      text: errorMessage,
+    });
     return;
   }
 
