@@ -110,7 +110,7 @@ Copy/create shell scripts in `.specify/scripts/bash/`:
 
 **Script Requirements**:
 - All scripts must be executable (`chmod +x`)
-- Scripts must be POSIX-compatible (bash/dash)
+- Scripts must use Bash (bash 4.0+)
 - `check-prerequisites.sh` must support `--json --paths-only` flags
 - `create-new-feature.sh` must support `--type` and `--short-name` flags
 - `setup-plan.sh` must support `--json` flag
