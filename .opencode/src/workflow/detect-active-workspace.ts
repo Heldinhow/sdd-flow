@@ -2,11 +2,12 @@ import { readdirSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
 
-function getCurrentBranch(): string | null {
+function getCurrentBranch(repoPath: string): string | null {
   try {
     return execSync("git rev-parse --abbrev-ref HEAD", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
+      cwd: repoPath,
     })
       .trim();
   } catch {
@@ -68,7 +69,7 @@ function detectActiveWorkspace(repoRoot: string): string | null {
       return null;
     }
 
-    const currentBranch = getCurrentBranch();
+    const currentBranch = getCurrentBranch(repoRoot);
     if (currentBranch && currentBranch !== "HEAD" && entries.includes(currentBranch)) {
       return currentBranch;
     }
