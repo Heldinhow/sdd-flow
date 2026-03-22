@@ -168,7 +168,7 @@ jobs:
           echo "✓ SDD prerequisites check passed"
 
       - name: Check for checklists
-        if: always()
+        if: success() && steps.workspace.outputs.found == 'true'
         run: |
           WORKSPACE="${{ steps.workspace.outputs.workspace }}"
           CHECKLISTS_DIR="specs/$WORKSPACE/checklists"

@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 import path from "node:path";
+import { logger } from "../lib/logger";
 
 interface ApprovalState {
   specApproved: boolean;
@@ -34,13 +35,14 @@ function loadApprovals(repoRoot: string): FeatureApprovals {
     const content = readFileSync(filePath, "utf8");
     return JSON.parse(content) as FeatureApprovals;
   } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
     // Create backup of corrupted file before overwriting
     const backupPath = `${filePath}.corrupted.${Date.now()}`;
     try {
       copyFileSync(filePath, backupPath);
-      console.error(`ERROR: approvals.json is corrupted. Backup created at ${backupPath}`);
-    } catch {
-      console.error(`ERROR: approvals.json is corrupted and backup failed: ${err}`);
+      logger.error("approvals.json is corrupted. Backup created", error, { backupPath, filePath });
+    } catch (backupErr) {
+      logger.error("approvals.json is corrupted and backup failed", error, { filePath, backupError: backupErr });
     }
     return {};
   }
