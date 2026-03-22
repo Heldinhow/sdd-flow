@@ -52,7 +52,7 @@ describe("guided sdd workflow", () => {
     ]);
   });
 
-  it("routes to waiting_spec_approval when no approval state is known", () => {
+  it("routes to spec_review when no approval state is known", () => {
     const repoRoot = mkdtempSync(path.join(tmpdir(), "sdd-guided-"));
     const featureRoot = path.join(repoRoot, "specs/feat-opencode-sdd-agent");
     mkdirSync(featureRoot, { recursive: true });
@@ -65,8 +65,8 @@ describe("guided sdd workflow", () => {
       activeFeature: "feat-opencode-sdd-agent",
     });
 
-    expect(result.phase).toBe(WORKFLOW_PHASE.WAITING_SPEC_APPROVAL);
-    expect(result.nextRecommendation).toContain("approve");
+    expect(result.phase).toBe(WORKFLOW_PHASE.SPEC_REVIEW);
+    expect(result.nextRecommendation).toContain("quality");
   });
 
   it("routes to tasks when both spec and plan are approved", () => {

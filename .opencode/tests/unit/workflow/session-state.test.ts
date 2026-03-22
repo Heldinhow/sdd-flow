@@ -15,8 +15,8 @@ describe("session-state", () => {
       expect(WORKFLOW_PHASE.COMPLETE).toBe("complete");
     });
 
-    it("has 8 phases", () => {
-      expect(Object.keys(WORKFLOW_PHASE)).toHaveLength(8);
+    it("has 9 phases", () => {
+      expect(Object.keys(WORKFLOW_PHASE)).toHaveLength(9);
     });
   });
 
