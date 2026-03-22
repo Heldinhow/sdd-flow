@@ -149,7 +149,7 @@ function injectSddBackendTemplate(projectRoot: string, output: ChatMessageOutput
     messageID: output.message.id,
     type: "text",
     synthetic: true,
-    text: template.replaceAll("$ARGUMENTS", userText),
+    text: template.replaceAll(/\$ARGUMENTS\b/g, userText),
   });
 }
 
