@@ -2,7 +2,7 @@ import { determineNextPhase, getNextRecommendation } from "./phase-router";
 import { loadWorkflowContext } from "./context-loader";
 import { resumeFlow } from "./resume-flow";
 import { runClarifyLoop, type ClarifyLoopResult } from "./run-clarify-loop";
-import { type WorkflowPhase } from "./session-state";
+import { WORKFLOW_PHASE, type WorkflowPhase } from "./session-state";
 import { type ClarificationAnswer } from "./apply-clarifications";
 
 interface RunGuidedSddInput {
@@ -13,6 +13,7 @@ interface RunGuidedSddInput {
   clarificationAnswers?: ClarificationAnswer[];
   specApproved?: boolean;
   planApproved?: boolean;
+  shouldCreateNewWorkspace?: boolean;
 }
 
 interface GuidedSddResult {
@@ -22,6 +23,17 @@ interface GuidedSddResult {
 
 function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
   if (!input.activeFeature) {
+    // Session-scoped workspaces: default to creating new workspace unless explicitly resuming
+    const shouldCreateNew = input.shouldCreateNewWorkspace ?? true;
+    if (shouldCreateNew) {
+      // For new sessions, return SPECIFY phase (don't try to reuse existing workspace)
+      return {
+        phase: WORKFLOW_PHASE.SPECIFY,
+        nextRecommendation: getNextRecommendation(WORKFLOW_PHASE.SPECIFY),
+      };
+    }
+
+    // Only resume if explicitly requested
     const resumed = resumeFlow({ repoRoot: input.repoRoot });
     return {
       phase: resumed.phase,
