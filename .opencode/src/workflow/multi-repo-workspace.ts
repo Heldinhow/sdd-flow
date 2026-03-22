@@ -210,11 +210,18 @@ function getRepoRootForFeature(workspaceRoot: string, featureName: string): stri
 
   if (!config) {
     // Single repo mode - feature is in primary repo
-    return join(config?.primaryRepo || workspaceRoot, "specs", featureName);
+    return join(workspaceRoot, "specs", featureName);
   }
 
-  // Check if feature has a specific repo assignment
-  // For now, all features go to the primary repo
+  // Search all repos to find the one that has this feature
+  for (const repo of config.repos) {
+    const featurePath = join(repo.localPath, "specs", featureName);
+    if (existsSync(featurePath)) {
+      return featurePath;
+    }
+  }
+
+  // Feature not found in any repo - default to primary repo
   return join(config.primaryRepo, "specs", featureName);
 }
 
