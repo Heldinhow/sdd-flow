@@ -122,7 +122,7 @@ function runScript(scriptPath: string, args: string[] = []): { stdout: string; s
   }
 }
 
-function getScriptPath(scriptName: string): string {
+function getScriptPath(scriptName: string): string | null {
   const repoRoot = getRepoRoot();
   // Try repo-local scripts first
   const repoScript = join(repoRoot, ".specify", "scripts", "bash", scriptName);
@@ -133,7 +133,7 @@ function getScriptPath(scriptName: string): string {
   const bundleScript = join(bundleRoot, ".specify", "scripts", "bash", scriptName);
   if (existsSync(bundleScript)) return bundleScript;
 
-  return repoScript;
+  return null;
 }
 
 function isInitialized(repoRoot: string): boolean {
