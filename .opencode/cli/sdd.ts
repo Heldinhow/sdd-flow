@@ -280,11 +280,6 @@ async function cmdWorkspaces(_args: WorkspacesOptions): Promise<void> {
   }
 
   // Manual workspace listing
-  const entries = await Bun.file(specsDir).text().then(() => {
-    // This won't work with directory listing via Bun.file - use exec
-    return [] as { name: string; phase: string; is_active: boolean; artifacts: { spec: boolean; plan: boolean; tasks: boolean } }[];
-  });
-
   if (_args.json) {
     // Use exec to find directories
     const result = execSync(
