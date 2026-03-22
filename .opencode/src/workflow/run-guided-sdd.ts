@@ -4,6 +4,7 @@ import { resumeFlow } from "./resume-flow";
 import { runClarifyLoop, type ClarifyLoopResult } from "./run-clarify-loop";
 import { WORKFLOW_PHASE, type WorkflowPhase } from "./session-state";
 import { type ClarificationAnswer } from "./apply-clarifications";
+import { saveFeatureApproval } from "./approval-state";
 
 interface RunGuidedSddInput {
   repoRoot: string;
@@ -54,6 +55,13 @@ function runGuidedSdd(input: RunGuidedSddInput): GuidedSddResult {
     : (input.hasOutstandingClarifications ?? false);
 
   const hasResumeIntent = !!input.activeFeature;
+
+  if (input.specApproved || input.planApproved) {
+    saveFeatureApproval(input.repoRoot, input.activeFeature, {
+      specApproved: input.specApproved ?? false,
+      planApproved: input.planApproved ?? false,
+    });
+  }
 
   const phase = determineNextPhase({
     repoInitialized: context.repoInitialized,
