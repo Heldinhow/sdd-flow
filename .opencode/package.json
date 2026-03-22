@@ -22,9 +22,14 @@
   "exports": {
     ".": "./plugin/sdd.ts"
   },
+  "bin": {
+    "sdd": "./bin/sdd"
+  },
   "files": [
     "plugin/**/*.ts",
     "src/**/*.ts",
+    "cli/**/*.ts",
+    "bin/**/*",
     "skills/**/*.md",
     "scripts/**/*.js",
     "managed-assets/**/*"
@@ -35,7 +40,8 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "prepublishOnly": "bunx tsc --noEmit && bun test"
+    "prepublishOnly": "bunx tsc --noEmit && bun test",
+    "sdd": "bun run cli/sdd.ts"
   },
   "dependencies": {
     "@opencode-ai/plugin": "1.2.27",
