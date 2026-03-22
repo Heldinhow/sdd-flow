@@ -167,7 +167,7 @@ async function cmdInit(_args: InitOptions): Promise<void> {
   }
 
   try {
-    execSync(`bash "${initScript}" --bootstrap`, {
+    execSync(`bash "${initScript}" -- "init"`, {
       cwd: repoRoot,
       stdio: "inherit",
     });
