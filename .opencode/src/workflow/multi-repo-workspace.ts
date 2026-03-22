@@ -222,7 +222,9 @@ function getRepoRootForFeature(workspaceRoot: string, featureName: string): stri
   }
 
   // Feature not found in any repo - default to primary repo
-  return join(config.primaryRepo, "specs", featureName);
+  const primaryRepoConfig = config.repos.find((r) => r.isPrimary);
+  const primaryPath = primaryRepoConfig?.localPath ?? config.primaryRepo;
+  return join(primaryPath, "specs", featureName);
 }
 
 function getAllFeaturePaths(workspaceRoot: string, featureName: string): { repo: string; path: string }[] {
@@ -250,6 +252,5 @@ export {
   linkWorkspaceToRepos,
   getRepoRootForFeature,
   getAllFeaturePaths,
-  getCurrentBranch,
 };
 export type { RepoConfig, MultiRepoWorkspaceConfig, MultiRepoContext, LoadMultiRepoWorkspaceInput };
