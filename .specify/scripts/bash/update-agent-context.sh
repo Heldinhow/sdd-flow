@@ -117,7 +117,7 @@ log_warning() {
 
 # Cleanup function for temporary files
 cleanup() {
-    local exit_code=$?
+    exit_code=$?
     # Disarm traps to prevent re-entrant loop
     trap - EXIT INT TERM
     rm -f /tmp/agent_update_*_$$
