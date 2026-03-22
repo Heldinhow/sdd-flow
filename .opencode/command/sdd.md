@@ -145,12 +145,16 @@ When the user provides a new feature request:
    - If the user requests changes, update the planning artifacts and wait for re-approval
    - Only after approval, proceed to task generation
 
-7. **Guided task preparation**: After plan is approved:
+7. **Update agent context**: After plan is approved and before task generation:
+   - Run `.specify/scripts/bash/update-agent-context.sh` to update agent context files with the new plan information
+   - This ensures the agent has up-to-date project context for task generation
+
+8. **Guided task preparation**: After agent context is updated:
    - Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` to verify readiness
    - Generate `tasks.md` using the approved planning artifacts as input
    - Do NOT ask the user to run a separate task-generation command
 
-8. **Present next step**: Always end with a clear, specific recommendation for what to do next
+9. **Present next step**: Always end with a clear, specific recommendation for what to do next
 
 ### Key Behavioral Rules
 
