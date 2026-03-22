@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 
 import { BRANCH_PREFIX_VALUES } from "../branching/prefixes";
 import { discoverCommands, registerCommands } from "./command-registry";
 import { PreScriptRunner } from "./pre-script-runner";
+import { runInit } from "../init/run-init";
 import {
   SDD_SKILL_NAMES,
   SPEC_DRIVEN_AGENT,
@@ -60,6 +62,52 @@ function buildSyntheticPartIds(sessionID: string, commandName: string): { id: st
   };
 }
 
+function resolveBundleRoot(): string {
+  return path.join(path.resolve(fileURLToPath(import.meta.url), "..", "..", ".."), "managed-assets");
+}
+
+function formatInitOutput(result: { addedAssets: string[]; keptAssets: string[]; reviewAssets: string[]; nextRecommendation: string; needsInitialization: boolean }): string {
+  const lines: string[] = [];
+
+  lines.push("## SDD Initialization Result");
+  lines.push("");
+
+  if (result.needsInitialization) {
+    lines.push("**Status**: Repository requires initialization");
+  } else {
+    lines.push("**Status**: Repository already initialized");
+  }
+
+  if (result.addedAssets.length > 0) {
+    lines.push("");
+    lines.push("**Added assets**:");
+    for (const asset of result.addedAssets) {
+      lines.push(`  - ${asset}`);
+    }
+  }
+
+  if (result.keptAssets.length > 0) {
+    lines.push("");
+    lines.push("**Kept existing assets**:");
+    for (const asset of result.keptAssets) {
+      lines.push(`  - ${asset}`);
+    }
+  }
+
+  if (result.reviewAssets.length > 0) {
+    lines.push("");
+    lines.push("**Assets requiring review**:");
+    for (const asset of result.reviewAssets) {
+      lines.push(`  - ${asset}`);
+    }
+  }
+
+  lines.push("");
+  lines.push(`**Next**: ${result.nextRecommendation}`);
+
+  return lines.join("\n");
+}
+
 const sddPlugin: Plugin = async (input) => {
   const projectRoot = resolveProjectRoot(input);
   const repoInitialized = hasSddMarkers(projectRoot);
@@ -95,6 +143,24 @@ const sddPlugin: Plugin = async (input) => {
       injectSddBackendTemplate(projectRoot, output);
     },
     async "command.execute.before"(input, output) {
+      if (input.command === "sdd-init") {
+        const initResult = runInit({
+          sourceRoot: resolveBundleRoot(),
+          targetRoot: projectRoot,
+        });
+
+        const ids = buildSyntheticPartIds(input.sessionID, "sdd-init");
+        output.parts.unshift({
+          id: ids.id,
+          sessionID: input.sessionID,
+          messageID: ids.messageID,
+          type: "text",
+          synthetic: true,
+          text: formatInitOutput(initResult),
+        });
+        return;
+      }
+
       const result = await runner.runIfNeeded(input.command, projectRoot);
       if (!result) {
         return;
