@@ -29,7 +29,14 @@ async function runScript(
 
     let stdout = "";
     let stderr = "";
-    let exited = false;
+    let settled = false;
+
+    const settle = (result: { stdout: string; stderr: string; exitCode: number; errorKind: PreScriptResult["errorKind"] }) => {
+      if (!settled) {
+        settled = true;
+        resolve(result);
+      }
+    };
 
     proc.stdout?.on("data", (chunk: Buffer) => {
       stdout += chunk.toString();
@@ -40,8 +47,7 @@ async function runScript(
     });
 
     proc.on("close", (code: number | null) => {
-      exited = true;
-      resolve({
+      settle({
         stdout,
         stderr,
         exitCode: code ?? -1,
@@ -50,18 +56,17 @@ async function runScript(
     });
 
     proc.on("error", (err: NodeJS.ErrnoException) => {
-      exited = true;
       if (err.code === "ENOENT" || err.code === "EACCES") {
-        resolve({ stdout, stderr, exitCode: -1, errorKind: "notfound" });
+        settle({ stdout, stderr, exitCode: -1, errorKind: "notfound" });
       } else {
-        resolve({ stdout, stderr, exitCode: -1, errorKind: "unknown" });
+        settle({ stdout, stderr, exitCode: -1, errorKind: "unknown" });
       }
     });
 
     setTimeout(() => {
-      if (!exited) {
+      if (!settled) {
         proc.kill("SIGKILL");
-        resolve({ stdout, stderr, exitCode: -1, errorKind: "timeout" });
+        settle({ stdout, stderr, exitCode: -1, errorKind: "timeout" });
       }
     }, timeoutMs);
   });
