@@ -110,12 +110,22 @@ async function importWorkspace(options: ImportOptions): Promise<ImportResult> {
         }
 
         // Parse tar header
-        const name = header.toString("utf-8", 0, 100).replace(/\0+$/, "").trim();
+        const nameRaw = header.toString("utf-8", 0, 100).replace(/\0+$/, "").trim();
         const sizeStr = header.toString("ascii", 124, 136).replace(/\0/g, "").trim();
         const size = parseInt(sizeStr, 8) || 0;
         const typeFlag = header.toString("ascii", 156, 157);
+        const magic = header.toString("ascii", 257, 262);
 
         offset += 512;
+
+        // Handle long filenames in USTAR format: prefix + "/" + name
+        let name = nameRaw;
+        if (magic === "ustar") {
+          const prefix = header.toString("utf-8", 345, 500).replace(/\0+$/, "").trim();
+          if (prefix) {
+            name = prefix + "/" + nameRaw;
+          }
+        }
 
         if (!name || typeFlag !== "0") {
           // Skip directory entries or empty entries
