@@ -1,0 +1,218 @@
+# GitHub Actions workflow for SDD (Spec-Driven Development) PR validation
+#
+# This workflow validates that a feature branch has properly completed
+# the SDD workflow before allowing merge.
+#
+# Usage:
+#   Copy this file to .github/workflows/ in your project repository,
+#   or include it as part of your SDD workflow initialization.
+#
+# Requirements:
+#   - Repository must have .specify/scripts/bash/check-prerequisites.sh
+#   - Feature branches must follow the SDD workspace structure in specs/
+#
+# What it validates:
+#   1. Feature branch has a corresponding specs/ workspace
+#   2. The spec.md exists and is non-empty
+#   3. The plan.md exists and is non-empty
+#   4. The tasks.md exists and has approved/completed tasks
+#   5. All required checklist files pass (if checklists/ exists)
+
+name: SDD PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - master
+      - dev
+
+jobs:
+  sdd-pr-validation:
+    name: Validate SDD Workflow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect feature workspace
+        id: workspace
+        run: |
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${{ github.ref_name }}}"
+
+          # Check if branch matches a workspace
+          if [[ -d "specs/$BRANCH_NAME" ]]; then
+            echo "workspace=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          elif [[ -d "specs" ]]; then
+            # Try to find most recent workspace
+            WORKSPACE=$(ls -t specs/ | head -1)
+            echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "WARNING: Could not match branch to workspace. Using most recent: $WORKSPACE" >&2
+          else
+            echo "workspace=" >> $GITHUB_OUTPUT
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "ERROR: No specs/ directory found" >&2
+            exit 1
+          fi
+
+      - name: Check spec.md exists
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          if [[ -z "$WORKSPACE" ]]; then
+            echo "ERROR: No workspace detected"
+            exit 1
+          fi
+
+          SPEC_FILE="specs/$WORKSPACE/spec.md"
+          if [[ ! -f "$SPEC_FILE" ]]; then
+            echo "ERROR: spec.md not found at $SPEC_FILE"
+            exit 1
+          fi
+
+          # Check non-empty
+          if [[ ! -s "$SPEC_FILE" ]]; then
+            echo "ERROR: spec.md is empty"
+            exit 1
+          fi
+
+          echo "✓ spec.md found and non-empty"
+
+      - name: Check plan.md exists
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          PLAN_FILE="specs/$WORKSPACE/plan.md"
+
+          if [[ ! -f "$PLAN_FILE" ]]; then
+            echo "ERROR: plan.md not found at $PLAN_FILE"
+            exit 1
+          fi
+
+          if [[ ! -s "$PLAN_FILE" ]]; then
+            echo "ERROR: plan.md is empty"
+            exit 1
+          fi
+
+          echo "✓ plan.md found and non-empty"
+
+      - name: Check tasks.md exists
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          TASKS_FILE="specs/$WORKSPACE/tasks.md"
+
+          if [[ ! -f "$TASKS_FILE" ]]; then
+            echo "ERROR: tasks.md not found at $TASKS_FILE"
+            exit 1
+          fi
+
+          if [[ ! -s "$TASKS_FILE" ]]; then
+            echo "ERROR: tasks.md is empty"
+            exit 1
+          fi
+
+          echo "✓ tasks.md found and non-empty"
+
+      - name: Validate task completion
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          TASKS_FILE="specs/$WORKSPACE/tasks.md"
+
+          # Count total and completed tasks
+          TOTAL=$(grep -c '^- \[ \]' "$TASKS_FILE" 2>/dev/null || echo "0")
+          COMPLETED=$(grep -c '^- \[[xX]\]' "$TASKS_FILE" 2>/dev/null || echo "0")
+          ALL=$(grep -c '^- \[' "$TASKS_FILE" 2>/dev/null || echo "0")
+
+          echo "Tasks: $COMPLETED/$ALL completed"
+
+          if [[ "$ALL" -eq 0 ]]; then
+            echo "WARNING: No tasks found in tasks.md"
+          elif [[ "$COMPLETED" -eq 0 ]]; then
+            echo "ERROR: No tasks have been completed. All tasks must be marked [x] before merge."
+            exit 1
+          elif [[ "$COMPLETED" -lt "$ALL" ]]; then
+            echo "ERROR: Only $COMPLETED of $ALL tasks completed. All tasks must be [x] before merge."
+            exit 1
+          fi
+
+          echo "✓ All tasks completed"
+
+      - name: Run SDD prerequisites check
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          FEATURE_DIR="specs/$WORKSPACE"
+
+          # Create a temp script to run in the feature workspace
+          TEMP_SCRIPT=$(mktemp)
+          cat > "$TEMP_SCRIPT" << 'SCRIPT'
+            #!/usr/bin/env bash
+            set -e
+            cd "$1"
+            "$PWD/.specify/scripts/bash/check-prerequisites.sh" --json --require-tasks --include-tasks
+          SCRIPT
+
+          chmod +x "$TEMP_SCRIPT"
+
+          if [[ ! -f ".specify/scripts/bash/check-prerequisites.sh" ]]; then
+            echo "WARNING: check-prerequisites.sh not found. Skipping SDD script validation."
+            exit 0
+          fi
+
+          bash "$TEMP_SCRIPT" "$FEATURE_DIR"
+
+          echo "✓ SDD prerequisites check passed"
+
+      - name: Check for checklists
+        if: always()
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          CHECKLISTS_DIR="specs/$WORKSPACE/checklists"
+
+          if [[ ! -d "$CHECKLISTS_DIR" ]]; then
+            echo "No checklists/ directory - skipping checklist validation"
+            exit 0
+          fi
+
+          FAILED_CHECKLISTS=""
+
+          for checklist in "$CHECKLISTS_DIR"/*.md; do
+            [[ -e "$checklist" ]] || continue
+            NAME=$(basename "$checklist")
+
+            TOTAL=$(grep -c '^- \[ \]' "$checklist" 2>/dev/null || echo "0")
+            COMPLETED=$(grep -c '^- \[[xX]\]' "$checklist" 2>/dev/null || echo "0")
+
+            if [[ "$TOTAL" -eq 0 ]]; then
+              echo "  $NAME: No items - skipped"
+            elif [[ "$COMPLETED" -lt "$TOTAL" ]]; then
+              echo "  $NAME: ✗ FAILED ($COMPLETED/$TOTAL completed)"
+              FAILED_CHECKLISTS="$FAILED_CHECKLISTS $NAME"
+            else
+              echo "  $NAME: ✓ PASS ($COMPLETED/$TOTAL completed)"
+            fi
+          done
+
+          if [[ -n "$FAILED_CHECKLISTS" ]]; then
+            echo "ERROR: Failed checklists:$FAILED_CHECKLISTS"
+            echo "All checklist items must be completed before merge."
+            exit 1
+          fi
+
+          echo "✓ All checklists passed"
+
+      - name: Summary
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.workspace }}"
+          echo ""
+          echo "========================================"
+          echo "SDD PR Check Summary"
+          echo "========================================"
+          echo "Workspace: $WORKSPACE"
+          echo "Status: ✓ ALL CHECKS PASSED"
+          echo ""
+          echo "The feature branch is ready for merge."
+          echo "========================================"
