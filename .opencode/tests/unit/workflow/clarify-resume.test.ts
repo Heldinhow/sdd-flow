@@ -42,8 +42,10 @@ describe("clarify and resume workflows", () => {
     mkdirSync(path.join(repoRoot, ".specify"));
     mkdirSync(path.join(repoRoot, "specs/feat-old-workflow"), { recursive: true });
     mkdirSync(path.join(repoRoot, "specs/feat-new-workflow"), { recursive: true });
+    writeFileSync(path.join(repoRoot, "specs/feat-old-workflow/spec.md"), "# old");
+    writeFileSync(path.join(repoRoot, "specs/feat-new-workflow/spec.md"), "# new");
 
-    expect(detectActiveWorkspace(repoRoot)).toBe("feat-new-workflow");
+    expect(detectActiveWorkspace(repoRoot)).toBe("feat-old-workflow");
   });
 
   it("evaluates artifact state and routes to waiting_plan_approval when plan exists but is not approved", () => {
