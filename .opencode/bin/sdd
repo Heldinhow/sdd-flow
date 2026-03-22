@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# SDD CLI - Standalone Spec-Driven Development binary launcher
+
+set -e
+
+# Resolve the script directory
+SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Find the CLI source file
+CLI_SOURCE=""
+for candidate in \
+    "$SCRIPT_DIR/../cli/sdd.ts" \
+    "$SCRIPT_DIR/../src/cli/sdd.ts"; do
+    if [[ -f "$candidate" ]]; then
+        CLI_SOURCE="$candidate"
+        break
+    fi
+done
+
+if [[ -z "$CLI_SOURCE" ]]; then
+    echo "Error: SDD CLI source not found." >&2
+    exit 1
+fi
+
+# Find bun or node
+if command -v bun >/dev/null 2>&1; then
+    exec bun "$CLI_SOURCE" "$@"
+elif command -v node >/dev/null 2>&1; then
+    # Try with node + tsx or ts-node
+    if command -v tsx >/dev/null 2>&1; then
+        exec tsx "$CLI_SOURCE" "$@"
+    elif command -v ts-node >/dev/null 2>&1; then
+        exec ts-node --esm "$CLI_SOURCE" "$@"
+    else
+        echo "Error: Neither bun nor tsx/ts-node found. Please install bun or tsx." >&2
+        exit 1
+    fi
+else
+    echo "Error: Neither bun nor node found. Please install bun." >&2
+    exit 1
+fi
