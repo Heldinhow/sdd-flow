@@ -146,23 +146,24 @@ jobs:
           WORKSPACE="${{ steps.workspace.outputs.workspace }}"
           FEATURE_DIR="specs/$WORKSPACE"
 
-          # Create a temp script to run in the feature workspace
+          # Check if the prerequisites script exists at repo root
+          if [[ ! -f ".specify/scripts/bash/check-prerequisites.sh" ]]; then
+            echo "ERROR: .specify/scripts/bash/check-prerequisites.sh not found at repo root."
+            exit 1
+          fi
+
+          # Create a temp script to run the prerequisites check
           TEMP_SCRIPT=$(mktemp)
           cat > "$TEMP_SCRIPT" << 'SCRIPT'
             #!/usr/bin/env bash
             set -e
             cd "$1"
-            "$PWD/.specify/scripts/bash/check-prerequisites.sh" --json --require-tasks --include-tasks
+            "$REPO_ROOT/.specify/scripts/bash/check-prerequisites.sh" --json --require-tasks --include-tasks
           SCRIPT
 
           chmod +x "$TEMP_SCRIPT"
 
-          if [[ ! -f ".specify/scripts/bash/check-prerequisites.sh" ]]; then
-            echo "WARNING: check-prerequisites.sh not found. Skipping SDD script validation."
-            exit 0
-          fi
-
-          bash "$TEMP_SCRIPT" "$FEATURE_DIR"
+          REPO_ROOT="$(pwd)" bash "$TEMP_SCRIPT" "$FEATURE_DIR"
 
           echo "✓ SDD prerequisites check passed"
 
