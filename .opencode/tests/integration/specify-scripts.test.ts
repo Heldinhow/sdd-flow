@@ -47,19 +47,24 @@ describe("specify shell scripts", () => {
     await runShell("git init", tempRoot);
 
     const result = await runShell(
-      `"${createFeatureScript}" --json --type feat --short-name "opencode-sdd-agent" "Create unified SDD workflow"`,
+      `"${createFeatureScript}" --json --short-name "opencode-sdd-agent" "Create unified SDD workflow"`,
       tempRoot,
       { SPECIFY_REPO_ROOT: tempRoot },
     );
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("feat-opencode-sdd-agent");
-    expect(await Bun.file(path.join(tempRoot, "specs/feat-opencode-sdd-agent/spec.md")).exists()).toBe(true);
+    expect(result.stdout).toContain("opencode-sdd-agent");
+
+    // Parse the JSON to get the actual branch name assigned by the script
+    const json = JSON.parse(result.stdout.trim());
+    expect(json.BRANCH_NAME).toContain("opencode-sdd-agent");
+    expect(await Bun.file(json.SPEC_FILE).exists()).toBe(true);
   });
 
   it("runs setup-plan for typed feature workspaces", async () => {
     const tempRoot = createTempWorkflowRepo();
-    const featureDir = path.join(tempRoot, "specs/feat-opencode-sdd-agent");
+    await runShell("git init", tempRoot);
+    const featureDir = path.join(tempRoot, "specs/001-opencode-sdd-agent");
     mkdirSync(featureDir, { recursive: true });
     writeFileSync(path.join(featureDir, "spec.md"), "# spec\n");
 
@@ -68,18 +73,19 @@ describe("specify shell scripts", () => {
       tempRoot,
       {
         SPECIFY_REPO_ROOT: tempRoot,
-        SPECIFY_FEATURE: "feat-opencode-sdd-agent",
+        SPECIFY_FEATURE: "001-opencode-sdd-agent",
       },
     );
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("feat-opencode-sdd-agent");
+    expect(result.stdout).toContain("001-opencode-sdd-agent");
     expect(await Bun.file(path.join(featureDir, "plan.md")).exists()).toBe(true);
   });
 
   it("resolves typed feature workspaces in prerequisite checks", async () => {
     const tempRoot = createTempWorkflowRepo();
-    const featureDir = path.join(tempRoot, "specs/feat-opencode-sdd-agent");
+    await runShell("git init", tempRoot);
+    const featureDir = path.join(tempRoot, "specs/001-opencode-sdd-agent");
     mkdirSync(featureDir, { recursive: true });
     writeFileSync(path.join(featureDir, "spec.md"), "# spec\n");
     writeFileSync(path.join(featureDir, "plan.md"), "# plan\n");
@@ -90,12 +96,12 @@ describe("specify shell scripts", () => {
       tempRoot,
       {
         SPECIFY_REPO_ROOT: tempRoot,
-        SPECIFY_FEATURE: "feat-opencode-sdd-agent",
+        SPECIFY_FEATURE: "001-opencode-sdd-agent",
       },
     );
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("feat-opencode-sdd-agent");
+    expect(result.stdout).toContain("001-opencode-sdd-agent");
     expect(result.stdout).toContain("tasks.md");
   });
 });
