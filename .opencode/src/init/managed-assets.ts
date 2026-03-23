@@ -9,7 +9,6 @@ const MANAGED_ASSET_GROUP = {
   SCRIPT: "script",
   TEMPLATE: "template",
   MEMORY: "memory",
-  GUIDE: "guide",
 } as const;
 
 const MANAGED_ASSET_ROOT = {
@@ -18,7 +17,6 @@ const MANAGED_ASSET_ROOT = {
   SPECIFY_SCRIPTS: ".specify/scripts/bash",
   SPECIFY_TEMPLATES: ".specify/templates",
   SPECIFY_MEMORY: ".specify/memory",
-  GUIDE: "AGENTS.md",
 } as const;
 
 const MANAGED_ASSETS_BUNDLE = ["managed-assets"] as const;
@@ -72,9 +70,6 @@ function inferManagedAssetGroup(relativePath: string): ManagedAssetGroup {
   }
   if (relativePath.startsWith(".specify/memory/")) {
     return MANAGED_ASSET_GROUP.MEMORY;
-  }
-  if (relativePath === "AGENTS.md") {
-    return MANAGED_ASSET_GROUP.GUIDE;
   }
   return MANAGED_ASSET_GROUP.RUNTIME;
 }

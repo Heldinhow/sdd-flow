@@ -60,10 +60,10 @@ Load only the minimal necessary context from each artifact:
 - Parallel markers [P]
 - Referenced file paths
 
-**From AGENTS.md and constitution:**
+**From constitution:**
 
-- Load `AGENTS.md` for active development guidelines and conventions
 - Constitution (`.specify/memory/constitution.md`) is optional — only validate against it if the file exists AND contains actual filled principles (not template placeholders like `[PRINCIPLE_NAME]`)
+- If `AGENTS.md` exists in the repository root, load it for additional development guidelines and conventions
 
 ### 3. Build Semantic Models
 

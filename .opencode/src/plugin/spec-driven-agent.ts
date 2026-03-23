@@ -45,7 +45,6 @@ function buildSpecDrivenPrompt(input: BuildSpecDrivenPromptInput): string {
       "- `.opencode/` directory with commands and plugin",
       "- `.opencode/skills/` with repo-local SDD orchestration skills",
       "- `specs/` directory for feature workspaces",
-      "- `AGENTS.md` with development guidelines",
       "- Interactive constitution creation",
     ].join("\n");
   }

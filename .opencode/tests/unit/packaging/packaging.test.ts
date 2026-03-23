@@ -36,7 +36,6 @@ const REQUIRED_SPECIFY_ASSETS = [
   ".specify/templates/tasks-template.md",
 ] as const;
 
-const REQUIRED_GUIDE_ASSETS = ["AGENTS.md"] as const;
 const REQUIRED_SKILLS = [
   ".opencode/skills/sdd-flow/SKILL.md",
   ".opencode/skills/sdd-spec/SKILL.md",
@@ -57,13 +56,6 @@ describe("packaging verification", () => {
       it(`contains specify asset: ${asset}`, () => {
         const assetPath = path.join(bundleRoot, asset);
         expect(existsSync(assetPath), `${assetPath} must exist in bundle`).toBe(true);
-      });
-    }
-
-    for (const guide of REQUIRED_GUIDE_ASSETS) {
-      it(`contains guide: ${guide}`, () => {
-        const guidePath = path.join(bundleRoot, guide);
-        expect(existsSync(guidePath), `${guidePath} must exist in bundle`).toBe(true);
       });
     }
 

@@ -7,7 +7,6 @@ interface RepoState {
   targetRoot: string;
   hasOpencode: boolean;
   hasSpecify: boolean;
-  hasAgentsFile: boolean;
   presentAssets: string[];
   missingAssets: string[];
   needsInitialization: boolean;
@@ -25,7 +24,6 @@ function detectRepoState(targetRoot: string, managedAssets: ManagedAsset[]): Rep
     targetRoot,
     hasOpencode: existsSync(path.join(targetRoot, ".opencode")),
     hasSpecify: existsSync(path.join(targetRoot, ".specify")),
-    hasAgentsFile: existsSync(path.join(targetRoot, "AGENTS.md")),
     presentAssets,
     missingAssets,
     needsInitialization: missingAssets.length > 0,

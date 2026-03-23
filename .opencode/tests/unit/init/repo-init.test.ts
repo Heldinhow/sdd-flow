@@ -21,7 +21,7 @@ describe("repo initialization modules", () => {
     expect(relativePaths).toContain(".specify/scripts/bash/create-new-feature.sh");
     expect(relativePaths).toContain(".specify/templates/spec-template.md");
     expect(relativePaths).toContain(".specify/memory/constitution.md");
-    expect(relativePaths).toContain("AGENTS.md");
+    expect(relativePaths).not.toContain("AGENTS.md");
   });
 
   it("detects when a repository still needs initialization", () => {
