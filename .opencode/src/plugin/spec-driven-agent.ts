@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Hooks } from "@opencode-ai/plugin";
 
@@ -90,13 +91,22 @@ function registerSpecDrivenAgent(config: PluginConfigInput, prompt: string): voi
   } as never;
 }
 
+function resolvePackageRoot(): string {
+  return path.resolve(fileURLToPath(import.meta.url), "..", "..", "..");
+}
+
 function loadSddTemplate(projectRoot: string): string | null {
-  const commandPath = path.join(projectRoot, ...SDD_COMMAND_PATH);
-  if (!existsSync(commandPath)) {
-    return null;
+  const repoLocalPath = path.join(projectRoot, ...SDD_COMMAND_PATH);
+  if (existsSync(repoLocalPath)) {
+    return readFileSync(repoLocalPath, "utf8");
   }
 
-  return readFileSync(commandPath, "utf8");
+  const bundlePath = path.join(resolvePackageRoot(), "managed-assets", ...SDD_COMMAND_PATH);
+  if (existsSync(bundlePath)) {
+    return readFileSync(bundlePath, "utf8");
+  }
+
+  return null;
 }
 
 function injectSddBackendTemplate(projectRoot: string, output: ChatMessageOutput): void {
