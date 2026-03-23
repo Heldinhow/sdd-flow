@@ -121,16 +121,10 @@ Copy/create shell scripts in `.specify/scripts/bash/`:
 
 Create OpenCode configuration files:
 
-- [ ] 4.1 Create `AGENTS.md` in repository root with development guidelines
-- [ ] 4.2 Ensure `.opencode/command/` has existing commands or create placeholder
-- [ ] 4.3 Create `.opencode/plugin/index.ts` or ensure exists
-- [ ] 4.4 Create `.opencode/tsconfig.json` if TypeScript files present
-- [ ] 4.5 Create `.opencode/package.json` if needed
-
-**AGENTS.md Requirements**:
-- Must include: Active technologies, Build/test commands, Project layout
-- Must include: TypeScript conventions, Plugin architecture, Testing conventions
-- Must include: Git branch naming conventions, SDD workflow commands
+- [ ] 4.1 Ensure `.opencode/command/` has existing commands or create placeholder
+- [ ] 4.2 Create `.opencode/plugin/index.ts` or ensure exists
+- [ ] 4.3 Create `.opencode/tsconfig.json` if TypeScript files present
+- [ ] 4.4 Create `.opencode/package.json` if needed
 
 ---
 
@@ -165,8 +159,7 @@ Verify all created items:
 - [ ] 6.4 Verify `.specify/memory/constitution.md` exists with no placeholders
 - [ ] 6.5 Verify `.opencode/` directory exists
 - [ ] 6.6 Verify `specs/` directory exists
-- [ ] 6.7 Verify `AGENTS.md` exists in repository root
-- [ ] 6.8 Verify all shell scripts are executable
+- [ ] 6.7 Verify all shell scripts are executable
 
 ---
 
@@ -188,7 +181,6 @@ After ALL checklist items are complete, output:
 ### Files Created
 - 5 shell scripts in `.specify/scripts/bash/`
 - 6 template files in `.specify/templates/`
-- `AGENTS.md` - Development guidelines
 - `.specify/memory/constitution.md` - Project constitution
 
 ### Next Steps

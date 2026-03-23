@@ -96,8 +96,8 @@ When the user invokes `/sdd init` or the system detects uninitialized repository
 **Key rules for initialization**:
 - Always preserve user-managed customizations in `.specify/` and `.opencode/`
 - Only install missing managed files; do not replace existing ones unless the user explicitly approves
-- `AGENTS.md` is the primary development guidelines; constitution (`.specify/memory/constitution.md`) is only created explicitly via `/speckit.constitution`
-- Ensure `AGENTS.md` is created or updated with the current planning stack
+- The project constitution (`.specify/memory/constitution.md`) is the governance document; it is only created explicitly via `/speckit.constitution`
+- Agent context files (e.g., `AGENTS.md`, `CLAUDE.md`) are generated organically by the planning phase via `update-agent-context.sh` — do not pre-install them during init
 - Create `.opencode/skills/sdd-flow`, `sdd-spec`, `sdd-plan`, and `sdd-tasks` as repo-local workflow skills used by `Spec Driven`
 - Expose one clear user-facing entrypoint through the `Spec Driven` agent while keeping `/sdd` as the guided workflow backend
 
