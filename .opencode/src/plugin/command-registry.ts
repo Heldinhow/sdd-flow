@@ -126,24 +126,16 @@ function extractTemplateContent(content: string): string {
   return content.slice(frontmatterMatch[0].length).replace(/^\r?\n/, "");
 }
 
-function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
-  const repoLocalCommandsDir = resolveCommandsDir(projectRoot);
-  const commands = new Map<string, CommandEntry>();
-
-  const commandsDir =
-    existsSync(repoLocalCommandsDir)
-      ? repoLocalCommandsDir
-      : resolveBundleCommandsDir();
-
-  if (!existsSync(commandsDir)) {
-    return commands;
+function loadCommandsFromDir(dir: string, commands: Map<string, CommandEntry>): void {
+  if (!existsSync(dir)) {
+    return;
   }
 
-  const files = readdirSync(commandsDir).filter((f) => f.endsWith(".md")).sort();
+  const files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
 
   for (const file of files) {
     const commandName = file.replace(/\.md$/, "");
-    const filePath = path.join(commandsDir, file);
+    const filePath = path.join(dir, file);
     const content = readFileSync(filePath, "utf8");
 
     const frontmatter = parseYamlFrontmatter(content);
@@ -170,6 +162,14 @@ function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
 
     commands.set(commandName, entry);
   }
+}
+
+function discoverCommands(projectRoot: string): Map<string, CommandEntry> {
+  const commands = new Map<string, CommandEntry>();
+
+  // Load bundle commands first, then overlay repo-local (repo-local takes precedence)
+  loadCommandsFromDir(resolveBundleCommandsDir(), commands);
+  loadCommandsFromDir(resolveCommandsDir(projectRoot), commands);
 
   return commands;
 }
